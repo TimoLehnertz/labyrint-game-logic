@@ -31,7 +31,7 @@ export class PathTile {
   ) {
     this.tileType = tileType;
     this.treasure = treasure;
-    this.rotation = rotation;
+    this.rotation = PathTile.normalizeRotation(rotation);
     this.homeOfPlayerIndex = homeOfPlayerIndex;
   }
 
@@ -43,7 +43,17 @@ export class PathTile {
     return this.openSidesCache;
   }
 
-  public rotate(repeat: number = 1): PathTile {
+  private static normalizeRotation(rotation: number): number {
+    while (rotation < 0) {
+      rotation += 4;
+    }
+    while (rotation > 4) {
+      rotation -= 4;
+    }
+    return rotation;
+  }
+
+  public rotate(repeat: number): PathTile {
     if (repeat === 0) {
       return this;
     }
@@ -71,5 +81,21 @@ export class PathTile {
       this.rotation,
       this.homeOfPlayerIndex
     );
+  }
+
+  public equals(other: PathTile): boolean {
+    if (this.tileType !== other.tileType) {
+      return false;
+    }
+    if (!Treasure.compare(this.treasure, other.treasure)) {
+      return false;
+    }
+    if (this.rotation !== other.rotation) {
+      return false;
+    }
+    if (this.homeOfPlayerIndex !== other.homeOfPlayerIndex) {
+      return false;
+    }
+    return true;
   }
 }

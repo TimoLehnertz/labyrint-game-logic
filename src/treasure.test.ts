@@ -15,3 +15,11 @@ test("notEquals", () => {
     expect(treasureA.equals(treasureB)).toBeFalsy();
   }
 });
+
+test("compare", () => {
+  expect(Treasure.compare(new Treasure(1), new Treasure(1))).toBe(true);
+  expect(Treasure.compare(new Treasure(1), new Treasure(2))).toBe(false);
+  expect(Treasure.compare(null, new Treasure(2))).toBe(false);
+  expect(Treasure.compare(new Treasure(1), null)).toBe(false);
+  expect(Treasure.compare(null, null)).toBe(true);
+});

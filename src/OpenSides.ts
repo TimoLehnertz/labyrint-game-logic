@@ -39,10 +39,14 @@ export class OpenSides {
       rotation += 4;
     }
     for (let i = 0; i < rotation; i++) {
-      (this.northOpen = this.westOpen),
-        (this.eastOpen = this.northOpen),
-        (this.southOpen = this.eastOpen),
-        (this.westOpen = this.southOpen);
+      const newNorthOpen: boolean = this.northOpen;
+      const newEastOpen: boolean = this.eastOpen;
+      const newSouthOpen: boolean = this.southOpen;
+      const newWestOpen: boolean = this.westOpen;
+      this.northOpen = newWestOpen;
+      this.eastOpen = newNorthOpen;
+      this.southOpen = newEastOpen;
+      this.westOpen = newSouthOpen;
     }
   }
 

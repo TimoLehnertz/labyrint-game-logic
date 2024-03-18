@@ -30,7 +30,9 @@ export class PlayerState {
    * Returns the number of remaining treasures to be found including the currently open treasure
    */
   public get remainingTreasureCount(): number {
-    return this.remainingTreasures.length;
+    return (
+      this.remainingTreasures.length + (this.currentTreasure !== null ? 1 : 0)
+    );
   }
 
   public get foundTreasureCount(): number {
@@ -98,5 +100,35 @@ export class PlayerState {
       newRemainingTreasures.push(remainingTreasure);
     }
     return newRemainingTreasures;
+  }
+
+  public equals(other: PlayerState): boolean {
+    if (!this.position.equals(other.position)) {
+      return false;
+    }
+    if (!Treasure.compare(this.currentTreasure, other.currentTreasure)) {
+      return false;
+    }
+    if (this.foundTreasures.length !== other.foundTreasures.length) {
+      return false;
+    }
+    for (let i = 0; i < this.foundTreasures.length; i++) {
+      const a = this.foundTreasures[i];
+      const b = other.foundTreasures[i];
+      if (!a.equals(b)) {
+        return false;
+      }
+    }
+    if (this.remainingTreasures.length !== other.remainingTreasures.length) {
+      return false;
+    }
+    for (let i = 0; i < this.remainingTreasures.length; i++) {
+      const a = this.remainingTreasures[i];
+      const b = other.remainingTreasures[i];
+      if (!a.equals(b)) {
+        return false;
+      }
+    }
+    return true;
   }
 }

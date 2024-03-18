@@ -1,5 +1,4 @@
 import { BoardPosition } from "./BoardPosition";
-import { add } from "./add";
 
 test("add", () => {
   const boardPositionA = new BoardPosition(1, 2);

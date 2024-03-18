@@ -3,11 +3,10 @@
  */
 import { BoardPosition } from "./BoardPosition";
 import { Heading, HeadingHelper } from "./Heading";
-import { OpenSides } from "./OpenSides";
 import { Path } from "./Path";
 import { ShiftPosition } from "./ShiftPosition";
 import { PathTile } from "./PathTile";
-import { Vec2 } from "./Vec2";
+import { Treasure } from "./Treasure";
 
 /**
  * Immutable Board class representing the gameboard.
@@ -39,29 +38,14 @@ export class Board {
     }
   }
 
-  /**
-   * Because Tile is immutable we dont need to make a deep copy here
-   */
-  private copyTiles(): PathTile[][] {
-    const newTiles: PathTile[][] = [];
-    for (const column of this.tiles) {
-      const newColumn = [];
-      for (const tile of column) {
-        newColumn.push(tile);
-      }
-      newTiles.push(newColumn);
-    }
-    return newTiles;
-  }
-
   public shift(shiftPosition: ShiftPosition) {
     let currentPosition = this.getFirstMovedTilePosition(shiftPosition);
     const newTiles = this.copyTiles();
     let lastTile = this.looseTile;
     while (currentPosition.isInBounds(this.width, this.height)) {
-      const currentTile = newTiles[currentPosition.x][currentPosition.y];
+      const tmp = newTiles[currentPosition.x][currentPosition.y];
       newTiles[currentPosition.x][currentPosition.y] = lastTile;
-      lastTile = currentTile;
+      lastTile = tmp;
       currentPosition = currentPosition.add(shiftPosition.shiftVector);
     }
     return new Board(newTiles, lastTile);
@@ -211,7 +195,7 @@ export class Board {
    */
   public static isSizeValid(size: number): boolean {
     return (
-      size > 7 && // must be larger than the min size
+      size >= 7 && // must be larger than the min size
       ((size - 1) % 4 === 0 || (size - 1) % 5 === 0 || (size - 1) % 6 === 0) && // must be possible to distribute players home positions equaly
       size % 2 != 0 // has to be uneven to not have shift rows at the edge
     );
@@ -250,6 +234,10 @@ export class Board {
     return homePositions;
   }
 
+  public getPlayerHomePosition(playerIndex: number): BoardPosition {
+    return Board.getPlayerHomePosition(playerIndex, this.width, this.height);
+  }
+
   public static getPlayerHomePosition(
     playerIndex: number,
     width: number,
@@ -257,6 +245,27 @@ export class Board {
   ): BoardPosition {
     const homePositions = Board.generatePlayerHomePositions(width, height);
     return homePositions[playerIndex];
+  }
+
+  public generateValieShiftPositions(): ShiftPosition[] {
+    const shiftPositions = [];
+    // north
+    for (let i = 1; i < this.width - 1; i += 2) {
+      shiftPositions.push(new ShiftPosition(Heading.NORTH, i));
+    }
+    // east
+    for (let i = 1; i < this.height - 1; i += 2) {
+      shiftPositions.push(new ShiftPosition(Heading.EAST, i));
+    }
+    // south
+    for (let i = 1; i < this.width - 1; i += 2) {
+      shiftPositions.push(new ShiftPosition(Heading.SOUTH, i));
+    }
+    // west
+    for (let i = 1; i < this.height - 1; i += 2) {
+      shiftPositions.push(new ShiftPosition(Heading.WEST, i));
+    }
+    return shiftPositions;
   }
 
   public isShiftPositionValid(shiftPosition: ShiftPosition): boolean {
@@ -284,35 +293,55 @@ export class Board {
   public getFirstMovedTilePosition(
     shiftPosition: ShiftPosition
   ): BoardPosition {
-    const xOffset = this.xOffset;
-    const yOffset = this.yOffset;
     switch (shiftPosition.heading) {
       case Heading.NORTH:
-        return new BoardPosition(xOffset + shiftPosition.index * 2, 0);
+        return new BoardPosition(1 + shiftPosition.index * 2, 0);
       case Heading.EAST:
-        return new BoardPosition(
-          this.width - 1,
-          yOffset + shiftPosition.index * 2
-        );
+        return new BoardPosition(this.width - 1, 1 + shiftPosition.index * 2);
       case Heading.SOUTH:
-        return new BoardPosition(
-          xOffset + shiftPosition.index * 2,
-          this.height - 1
-        );
+        return new BoardPosition(1 + shiftPosition.index * 2, this.height - 1);
       case Heading.WEST:
-        return new BoardPosition(0, yOffset + shiftPosition.index * 2);
+        return new BoardPosition(0, 1 + shiftPosition.index * 2);
     }
+  }
+
+  /**
+   * Because Tile is immutable we dont need to make a deep copy here
+   */
+  private copyTiles(): PathTile[][] {
+    const newTiles: PathTile[][] = [];
+    for (const column of this.tiles) {
+      const newColumn = [];
+      for (const tile of column) {
+        newColumn.push(tile);
+      }
+      newTiles.push(newColumn);
+    }
+    return newTiles;
   }
 
   public getTile(position: BoardPosition): PathTile {
     return this.tiles[position.x][position.y];
   }
 
-  public get xOffset(): number {
-    return this.width % 2 === 0 ? 0 : 1;
+  public getTreasureAt(position: BoardPosition): Treasure | null {
+    return this.tiles[position.x][position.y].treasure;
   }
 
-  public get yOffset(): number {
-    return this.height % 2 === 0 ? 0 : 1;
+  public equals(other: Board): boolean {
+    if (!this.looseTile.equals(other.looseTile)) {
+      return false;
+    }
+    if (this.width !== other.width || this.height !== other.height) {
+      return false;
+    }
+    for (let x = 0; x < this.width; x++) {
+      for (let y = 0; y < this.height; y++) {
+        if (!this.tiles[x][y].equals(other.tiles[x][y])) {
+          return false;
+        }
+      }
+    }
+    return true;
   }
 }

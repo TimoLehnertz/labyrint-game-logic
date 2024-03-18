@@ -38,11 +38,11 @@ export class HeadingHelper {
   public get vec2(): Vec2 {
     switch (this.heading) {
       case Heading.NORTH:
-        return new Vec2(0, -1);
+        return new Vec2(0, 1);
       case Heading.EAST:
         return new Vec2(1, 0);
       case Heading.SOUTH:
-        return new Vec2(0, 1);
+        return new Vec2(0, -1);
       case Heading.WEST:
         return new Vec2(-1, 0);
     }

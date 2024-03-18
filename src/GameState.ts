@@ -16,10 +16,16 @@ import { Treasure } from "./Treasure";
 export class GameState {
   public readonly board: Board;
   public readonly allPlayerStates: AllPlayerStates;
+  public readonly historyMoves: Move[];
 
-  public constructor(board: Board, allPlayerStates: AllPlayerStates) {
+  public constructor(
+    board: Board,
+    allPlayerStates: AllPlayerStates,
+    historyMoves: Move[]
+  ) {
     this.board = board;
     this.allPlayerStates = allPlayerStates;
+    this.historyMoves = historyMoves;
   }
 
   public isMoveLegal(move: Move): boolean {
@@ -46,40 +52,48 @@ export class GameState {
         expectedTreasure = treasureAtTo;
       }
     }
-    if (expectedTreasure !== move.collectedTreasure) {
+    if (!Treasure.compare(expectedTreasure, move.collectedTreasure)) {
       return false;
     }
     return true;
   }
 
-  /**
-   * Does not check if the move is legal
-   * @param move The LEGAL move to move
-   * @returns a modified version of this board
-   */
   public move(move: Move): GameState {
+    if (!this.isMoveLegal(move)) {
+      throw new Error("Illegal move");
+    }
     return this.rotateLooseTile(move.rotateBeforeShift)
       .insertTile(move.shiftPosition)
       .movePlayer(move.playerIndex, move.to)
-      .collectTreasure(move.playerIndex, move.collectedTreasure);
+      .collectTreasure(move.playerIndex, move.collectedTreasure)
+      .nextPlayer()
+      .addMoveToHistory(move);
   }
 
-  /**
-   * Does not check if the move is legal
-   * @param move The LEGAL move to undo
-   * @returns a modified version of this board
-   */
-  public undoMove(move: Move): GameState {
-    return this.removeLastTreasure(move.playerIndex, move.collectedTreasure)
-      .movePlayer(move.playerIndex, move.from)
-      .insertTile(this.board.invertShiftPosition(move.shiftPosition))
-      .rotateLooseTile(-move.rotateBeforeShift);
+  public undoMove(): { newGameState: GameState; undoneMove: Move | null } {
+    if (this.historyMoves.length === 0) {
+      return {
+        newGameState: this,
+        undoneMove: null,
+      };
+    }
+    const move = this.historyMoves[this.historyMoves.length - 1];
+    return {
+      newGameState: this.removeLastHistoryMove()
+        .prevPlayer()
+        .removeLastTreasure(move.playerIndex, move.collectedTreasure)
+        .movePlayer(move.playerIndex, move.from)
+        .insertTile(this.board.invertShiftPosition(move.shiftPosition))
+        .rotateLooseTile(-move.rotateBeforeShift),
+      undoneMove: move,
+    };
   }
 
   private rotateLooseTile(rotateBeforeShift: number): GameState {
     return new GameState(
       this.board.rotateLooseTile(rotateBeforeShift),
-      this.allPlayerStates
+      this.allPlayerStates,
+      this.historyMoves
     );
   }
 
@@ -101,12 +115,12 @@ export class GameState {
 
     const newBoard = this.board.shift(shiftPosition);
 
-    return new GameState(newBoard, newAllPlayerStates);
+    return new GameState(newBoard, newAllPlayerStates, this.historyMoves);
   }
 
   private movePlayer(playerIndex: number, to: BoardPosition) {
     const newAllPlayerStates = this.allPlayerStates.movePlayer(playerIndex, to);
-    return new GameState(this.board, newAllPlayerStates);
+    return new GameState(this.board, newAllPlayerStates, this.historyMoves);
   }
 
   private collectTreasure(
@@ -120,7 +134,20 @@ export class GameState {
       playerIndex,
       foundTreasure
     );
-    return new GameState(this.board, newAllPlayerStates);
+    return new GameState(this.board, newAllPlayerStates, this.historyMoves);
+  }
+
+  public getWinnerIndex(): number | null {
+    const playerStates = this.allPlayerStates.getPlayerStatesWithAllTreasures();
+    for (const player of playerStates) {
+      const playerHomePoint = this.board.getPlayerHomePosition(
+        player.playerIndex
+      );
+      if (player.playerState.position.equals(playerHomePoint)) {
+        return player.playerIndex;
+      }
+    }
+    return null;
   }
 
   private removeLastTreasure(
@@ -132,6 +159,51 @@ export class GameState {
     }
     const newAllPlayerStates =
       this.allPlayerStates.removeLastTreasure(playerIndex);
-    return new GameState(this.board, newAllPlayerStates);
+    return new GameState(this.board, newAllPlayerStates, this.historyMoves);
+  }
+
+  private nextPlayer(): GameState {
+    return new GameState(
+      this.board,
+      this.allPlayerStates.nextPlayer(),
+      this.historyMoves
+    );
+  }
+
+  private prevPlayer(): GameState {
+    return new GameState(
+      this.board,
+      this.allPlayerStates.prevPlayer(),
+      this.historyMoves
+    );
+  }
+
+  private copyHistory(): Move[] {
+    const newHistory = [];
+    for (const historyMove of this.historyMoves) {
+      newHistory.push(historyMove);
+    }
+    return newHistory;
+  }
+
+  private addMoveToHistory(move: Move): GameState {
+    const newHistory = this.copyHistory();
+    newHistory.push(move);
+    return new GameState(this.board, this.allPlayerStates, newHistory);
+  }
+
+  private removeLastHistoryMove(): GameState {
+    const newHistory = this.copyHistory();
+    newHistory.pop();
+    return new GameState(this.board, this.allPlayerStates, newHistory);
+  }
+
+  public equals(other: GameState): boolean {
+    // console.log(this.allPlayerStates.equals(other.allPlayerStates));
+    // console.log(this.board.equals(other.board));
+    return (
+      this.allPlayerStates.equals(other.allPlayerStates) &&
+      this.board.equals(other.board)
+    );
   }
 }

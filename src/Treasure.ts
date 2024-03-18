@@ -15,4 +15,17 @@ export class Treasure {
   public equals(other: Treasure): boolean {
     return this.id === other.id;
   }
+
+  public static compare(a: Treasure | null, b: Treasure | null): boolean {
+    if (a === null && b !== null) {
+      return false;
+    }
+    if (a !== null && b === null) {
+      return false;
+    }
+    if (a !== null && b !== null) {
+      return a.equals(b);
+    }
+    return true;
+  }
 }
