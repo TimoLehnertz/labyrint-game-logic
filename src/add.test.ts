@@ -1,4 +1,4 @@
-import { add } from "../src/add";
+import { add } from "./add";
 
 test("basic", () => {
   expect(add(0, 0)).toBe(0);
