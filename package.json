@@ -1,12 +1,12 @@
 {
   "name": "labyrinth-game-logic",
-  "version": "1.0.0",
+  "version": "1.0.5",
   "description": "A libary that implements the boardgame labyrinth and exposes the functionality to create and interact with games",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "test": "jest --coverage",
-    "build": "tsc"
+    "build": "tsup ./src/index.ts --format cjs,esm --dts"
   },
   "repository": {
     "type": "git",
@@ -28,5 +28,8 @@
     "ts-jest": "^29.1.2",
     "typescript": "^5.4.2"
   },
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "tsup": "^8.0.2"
+  }
 }
