@@ -10,12 +10,42 @@ import { PlayerState } from "./PlayerState";
 import { RandomNumberGenerator } from "./RandomNumberGenerator";
 import { Treasure } from "./Treasure";
 
+export interface CardRatios {
+  lCards: number;
+  streightCards: number;
+  tCards: number;
+}
+
+export interface TreasureCardChances {
+  lCardTreasureChance: number;
+  streightCardTreasureChance: number;
+  tCardTreasureChance: number;
+  fixCardTreasureChance: number;
+}
+
 export interface GameSetup {
   seed: string;
+  playerCount: number;
   boardWidth?: number;
   boardHeight?: number;
-  playerCount: number;
+  cardsRatio?: CardRatios;
+  treasureCardChances?: TreasureCardChances;
 }
+
+type GameTileType = "fix" | "homePoint" | TileType;
+
+const defaultCardsRatio: CardRatios = {
+  lCards: 15 / 34,
+  streightCards: 13 / 34,
+  tCards: 6 / 34,
+};
+
+const defaultTreasureCardChances: TreasureCardChances = {
+  lCardTreasureChance: 6 / 15,
+  streightCardTreasureChance: 0,
+  tCardTreasureChance: 1,
+  fixCardTreasureChance: 1,
+};
 
 export interface PlayerListener {
   yourTurn: (gameState: GameState, move: (move: Move) => boolean) => void;
@@ -120,12 +150,22 @@ export class Game {
    * Setup logic
    */
   public static buildFromSetup(setup: GameSetup): Game {
-    const boardWidth = setup.boardWidth ?? 7;
-    const boardHeight = setup.boardHeight ?? 7;
-    if (!Board.isSizeValid(boardWidth) || !Board.isSizeValid(boardHeight)) {
+    // apply defaults
+    setup.boardWidth ??= 7;
+    setup.boardHeight ??= 7;
+    setup.cardsRatio ??= defaultCardsRatio;
+    setup.treasureCardChances =
+      setup.treasureCardChances ?? defaultTreasureCardChances;
+    if (
+      !Board.isSizeValid(setup.boardWidth) ||
+      !Board.isSizeValid(setup.boardHeight)
+    ) {
       throw new Error(`Invalid board size`);
     }
-    const maxPlayers = Board.getMaxPlayerCount(boardWidth, boardHeight);
+    const maxPlayers = Board.getMaxPlayerCount(
+      setup.boardWidth,
+      setup.boardHeight
+    );
     if (setup.playerCount > maxPlayers) {
       throw new Error(`Too many players. Max ${maxPlayers}`);
     }
@@ -140,14 +180,16 @@ export class Game {
       generator,
       setup.playerCount,
       treasures,
-      boardWidth,
-      boardHeight
+      setup.boardWidth,
+      setup.boardHeight
     );
     const board = Game.generateRandomBoard(
       generator,
       treasures,
-      boardWidth,
-      boardHeight
+      setup.boardWidth,
+      setup.boardHeight,
+      setup.cardsRatio,
+      setup.treasureCardChances
     );
     const gameState = new GameState(board, allPlayerStates, []);
     return new Game(gameState, false);
@@ -165,7 +207,9 @@ export class Game {
     generator: RandomNumberGenerator,
     treasures: Treasure[],
     width: number,
-    height: number
+    height: number,
+    cardsRatios: CardRatios,
+    treasureCardChances: TreasureCardChances
   ) {
     // create board tile placeholders
     const tiles: (PathTile | null)[][] = [];
@@ -181,20 +225,37 @@ export class Game {
     tiles[width - 1][0] = new PathTile(TileType.L, null, 1, null);
     tiles[width - 1][height - 1] = new PathTile(TileType.L, null, 2, null);
     tiles[0][height - 1] = new PathTile(TileType.L, null, 3, null);
-    // fill fix edges
+    // get generator
     const getRandomTreasure = Game.getRandomTreasureProvider(
       generator,
-      treasures
+      treasures,
+      treasureCardChances
     );
+    const homePoints = Board.generatePlayerHomePositions(width, height);
+    function isHome(x: number, y: number): boolean {
+      for (const homePoint of homePoints) {
+        if (homePoint.x === x && homePoint.y === y) {
+          return true;
+        }
+      }
+      return false;
+    }
+    //
+    // fill fix edges
     // NORTH
     for (let x = 2; x < width - 2; x += 2) {
-      tiles[x][0] = new PathTile(TileType.T, getRandomTreasure(), 2, null);
+      tiles[x][0] = new PathTile(
+        TileType.T,
+        getRandomTreasure(isHome(x, 0) ? "homePoint" : "fix"),
+        2,
+        null
+      );
     }
     // EAST
     for (let y = 2; y < height - 2; y += 2) {
       tiles[width - 1][y] = new PathTile(
         TileType.T,
-        getRandomTreasure(),
+        getRandomTreasure(isHome(width - 1, y) ? "homePoint" : "fix"),
         3,
         null
       );
@@ -203,40 +264,59 @@ export class Game {
     for (let x = 2; x < width - 2; x += 2) {
       tiles[x][height - 1] = new PathTile(
         TileType.T,
-        getRandomTreasure(),
+        getRandomTreasure(isHome(x, height - 1) ? "homePoint" : "fix"),
         0,
         null
       );
     }
     // WEST
     for (let y = 2; y < height - 2; y += 2) {
-      tiles[0][y] = new PathTile(TileType.T, getRandomTreasure(), 1, null);
+      tiles[0][y] = new PathTile(
+        TileType.T,
+        getRandomTreasure(isHome(0, y) ? "homePoint" : "fix"),
+        1,
+        null
+      );
     }
     // fill fix center
     for (let x = 2; x < width - 2; x += 2) {
       for (let y = 2; y < height - 2; y += 2) {
         tiles[x][y] = new PathTile(
           TileType.T,
-          null,
+          getRandomTreasure(isHome(x, y) ? "homePoint" : "fix"),
           Math.floor(generator.rand() * 4),
           null
         );
       }
     }
     // fill remaining
-    const treasureCandidates: ({ x: number; y: number } | "loose-tile")[] = [
-      "loose-tile",
+    const treasureCandidates: ({ x: number; y: number } | "loose-tile")[][] = [
+      [], // T cards
+      [], // L cards
+      [], // Streight cards
     ];
+    const tileTypes = [TileType.T, TileType.L, TileType.STREIGHT];
+    function idxFromTileType(tileType: TileType): number {
+      switch (tileType) {
+        case TileType.T:
+          return 0;
+        case TileType.L:
+          return 1;
+        case TileType.STREIGHT:
+          return 2;
+      }
+    }
     for (let x = 0; x < width; x++) {
       for (let y = 0; y < height; y++) {
         if (tiles[x][y] === null) {
-          treasureCandidates.push({ x, y });
-          tiles[x][y] = new PathTile(
+          const pathTile = new PathTile(
             Game.generateRandomTileType(generator),
             null,
             Math.floor(generator.rand() * 4),
             null
           );
+          tiles[x][y] = pathTile;
+          treasureCandidates[idxFromTileType(pathTile.tileType)].push({ x, y });
         }
       }
     }
@@ -246,27 +326,23 @@ export class Game {
       Math.floor(generator.rand() * 4),
       null
     );
-    treasureCandidates.push("loose-tile");
+    treasureCandidates[idxFromTileType(looseTile.tileType)].push("loose-tile");
     // distribute remaining treasures
-    let currentTreasure = getRandomTreasure();
-
-    while (currentTreasure !== null) {
-      const chosenIndex = Math.floor(
-        generator.rand() * 0.999 * treasureCandidates.length
-      );
-      const chosenCandidate = treasureCandidates[chosenIndex];
-      if (chosenCandidate === "loose-tile") {
-        looseTile = looseTile.setTreasure(currentTreasure);
-      } else {
-        tiles[chosenCandidate.x][chosenCandidate.y] =
-          tiles[chosenCandidate.x][chosenCandidate.y]?.setTreasure(
-            currentTreasure
-          ) ?? null;
+    for (let i = 0; i < treasureCandidates.length; i++) {
+      const treasureCandidatesOfType = treasureCandidates[i];
+      for (const chosenCandidate of treasureCandidatesOfType) {
+        const treasure = getRandomTreasure(tileTypes[i]);
+        if (chosenCandidate === "loose-tile") {
+          looseTile = looseTile.setTreasure(treasure);
+        } else {
+          tiles[chosenCandidate.x][chosenCandidate.y] =
+            tiles[chosenCandidate.x][chosenCandidate.y]?.setTreasure(
+              treasure
+            ) ?? null;
+        }
       }
-      currentTreasure = getRandomTreasure();
     }
     // set homePoints
-    const homePoints = Board.generatePlayerHomePositions(width, height);
     for (let i = 0; i < homePoints.length; i++) {
       const homePoint = homePoints[i];
       tiles[homePoint.x][homePoint.y] =
@@ -290,14 +366,38 @@ export class Game {
 
   private static getRandomTreasureProvider(
     generator: RandomNumberGenerator,
-    treasures: Treasure[]
-  ): () => Treasure | null {
+    treasures: Treasure[],
+    treasureCardChances?: TreasureCardChances
+  ): (cardType?: GameTileType) => Treasure | null {
     const remainingTreasures: Treasure[] = [];
     for (const treasure of treasures) {
       remainingTreasures.push(treasure);
     }
-    function getRandomTreasure(): Treasure | null {
+    function getRandomTreasure(cardType?: GameTileType): Treasure | null {
+      let skipChance = 0;
+      if (treasureCardChances !== undefined && cardType !== undefined) {
+        switch (cardType) {
+          case TileType.L:
+            skipChance = treasureCardChances.lCardTreasureChance;
+            break;
+          case TileType.T:
+            skipChance = treasureCardChances.tCardTreasureChance;
+            break;
+          case TileType.STREIGHT:
+            skipChance = treasureCardChances.streightCardTreasureChance;
+            break;
+          case "fix":
+            skipChance = treasureCardChances.fixCardTreasureChance;
+            break;
+          case "homePoint":
+            skipChance = 1;
+            break;
+        }
+      }
       const rand = generator.rand();
+      if (rand > skipChance) {
+        return null;
+      }
       const index = Math.floor(
         Math.min(0.99, rand) * remainingTreasures.length
       );
