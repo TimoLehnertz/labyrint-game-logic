@@ -182,7 +182,7 @@ export class Board {
 
   public static getValidSizes(maxSize: number): number[] {
     const validSizes = [];
-    for (let i = 0; i < maxSize; i++) {
+    for (let i = 0; i <= maxSize; i++) {
       if (Board.isSizeValid(i)) {
         validSizes.push(i);
       }

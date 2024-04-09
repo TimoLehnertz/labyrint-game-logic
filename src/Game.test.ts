@@ -1,3 +1,4 @@
+import { BoardPosition } from "./BoardPosition";
 import { Game } from "./Game";
 import { GameState } from "./GameState";
 import { generateMoves, generateShiftPositions } from "./MoveGenerator";
@@ -54,4 +55,21 @@ test("undo redo", () => {
   expect(gameStateAtStart.equals(gameStateAfterMove)).toBe(false);
   expect(gameStateAtStart.equals(gameStateAfterUndo)).toBe(true);
   expect(gameStateAfterRedo.equals(gameStateAfterMove)).toBe(true);
+});
+
+test("treasures", () => {
+  const game = Game.buildFromSetup({
+    playerCount: 4,
+    seed: "Hello world",
+  });
+  const treasures = [];
+  for (let x = 0; x < 7; x++) {
+    for (let y = 0; y < 7; y++) {
+      const tile = game.gameState.board.getTile(new BoardPosition(x, y));
+      if (tile.treasure) {
+        treasures.push(tile.treasure);
+      }
+    }
+  }
+  console.log(treasures);
 });
