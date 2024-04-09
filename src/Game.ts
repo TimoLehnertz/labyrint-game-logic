@@ -32,7 +32,7 @@ export interface GameSetup {
   treasureCardChances?: TreasureCardChances;
 }
 
-type GameTileType = "fix" | "homePoint" | TileType;
+export type GameTileType = "fix" | "homePoint" | TileType;
 
 const defaultCardsRatio: CardRatios = {
   lCards: 15 / 34,
@@ -364,7 +364,7 @@ export class Game {
     }
   }
 
-  private static getRandomTreasureProvider(
+  public static getRandomTreasureProvider(
     generator: RandomNumberGenerator,
     treasures: Treasure[],
     treasureCardChances?: TreasureCardChances
@@ -378,16 +378,16 @@ export class Game {
       if (treasureCardChances !== undefined && cardType !== undefined) {
         switch (cardType) {
           case TileType.L:
-            skipChance = treasureCardChances.lCardTreasureChance;
+            skipChance = 1 - treasureCardChances.lCardTreasureChance;
             break;
           case TileType.T:
-            skipChance = treasureCardChances.tCardTreasureChance;
+            skipChance = 1 - treasureCardChances.tCardTreasureChance;
             break;
           case TileType.STREIGHT:
-            skipChance = treasureCardChances.streightCardTreasureChance;
+            skipChance = 1 - treasureCardChances.streightCardTreasureChance;
             break;
           case "fix":
-            skipChance = treasureCardChances.fixCardTreasureChance;
+            skipChance = 1 - treasureCardChances.fixCardTreasureChance;
             break;
           case "homePoint":
             skipChance = 1;
@@ -395,13 +395,13 @@ export class Game {
         }
       }
       const rand = generator.rand();
-      if (rand > skipChance) {
+      if (rand < skipChance) {
         return null;
       }
       const index = Math.floor(
         Math.min(0.99, rand) * remainingTreasures.length
       );
-      if (index < remainingTreasures.length) {
+      if (index >= remainingTreasures.length) {
         return null;
       }
       const randomTreasure = remainingTreasures[index];
@@ -460,7 +460,7 @@ export class Game {
     return new AllPlayerStates(playerStates, 0);
   }
 
-  private static generateTreasures(amount: number): Treasure[] {
+  public static generateTreasures(amount: number): Treasure[] {
     const treasures = [];
     for (let i = 0; i < amount; i++) {
       treasures.push(new Treasure(i));
