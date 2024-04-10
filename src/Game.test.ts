@@ -1,7 +1,5 @@
-import { Board } from "./Board";
 import { BoardPosition } from "./BoardPosition";
 import { Game } from "./Game";
-import { GameState } from "./GameState";
 import { generateMoves, generateShiftPositions } from "./MoveGenerator";
 import { TileType } from "./PathTile";
 import { RandomNumberGenerator } from "./RandomNumberGenerator";
@@ -161,11 +159,6 @@ test("treasures", () => {
   }
 });
 
-// expect(homePoints[0].equals(new BoardPosition(0, 0))).toBeTruthy();
-// expect(homePoints[1].equals(new BoardPosition(0, 6))).toBeTruthy();
-// expect(homePoints[2].equals(new BoardPosition(6, 0))).toBeTruthy();
-// expect(homePoints[3].equals(new BoardPosition(6, 6))).toBeTruthy();
-
 test("homePositions", () => {
   const game = Game.buildFromSetup({
     playerCount: 4,
@@ -188,4 +181,12 @@ test("homePositions", () => {
   for (let i = 0; i < 4; i++) {
     expect(homes[i]).toBe(i);
   }
+});
+
+test("move", () => {
+  let game = Game.buildFromSetup();
+  game = Game.buildFromString(game.stringify());
+  const shiftPositions = generateShiftPositions(game.gameState);
+  const moves = generateMoves(game.gameState, shiftPositions[0], 0);
+  expect(game.move(moves[0])).toBeTruthy();
 });

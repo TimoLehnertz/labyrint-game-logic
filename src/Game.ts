@@ -47,50 +47,27 @@ export interface WinListener {
 export class Game {
   // Game state
   private _gameState: GameState;
-  private gameEnded: boolean;
   // stuff
   private redoHistory: Move[] = [];
-  private playerListeners: PlayerListener[][] = [];
-  private winListeners: WinListener[] = [];
 
-  private constructor(gameState: GameState, gameEnded: boolean) {
+  private constructor(gameState: GameState) {
     this._gameState = gameState;
-    this.gameEnded = gameEnded;
   }
 
   /**
    * Game Logic -------------------
    */
-  public move(move: Move): boolean {
+  public move(move: Move) {
     if (this.redoHistory.length > 0) {
-      return false;
+      throw new Error("redo all moves before moving a new move");
     }
-    if (this.gameEnded) {
-      return false;
+    if (this._gameState.getWinnerIndex() !== null) {
+      throw new Error("cant move after game has ended");
     }
-    if (!this._gameState.isMoveLegal(move)) {
-      return false;
-    }
+
+    this._gameState.validateMove(move); // throws on error
     this._gameState = this._gameState.move(move);
     this.redoHistory = [];
-    const winner = this._gameState.getWinnerIndex();
-    if (winner !== null) {
-      for (const winListener of this.winListeners) {
-        winListener.gameEnded(winner);
-      }
-      this.gameEnded = true;
-    } else {
-      // next palyers turn
-      const playerListeners =
-        this.playerListeners[this._gameState.allPlayerStates.playerIndexToMove];
-      if (playerListeners) {
-        for (const playerListener of playerListeners) {
-          playerListener.yourTurn(this._gameState, (move: Move) =>
-            this.move(move)
-          );
-        }
-      }
-    }
     return true;
   }
 
@@ -111,20 +88,6 @@ export class Game {
     }
     this._gameState = this._gameState.move(redoMove);
     return true;
-  }
-
-  public addPlayerListener(
-    playerIndex: number,
-    playerListener: PlayerListener
-  ): void {
-    if (typeof this.playerListeners[playerIndex] === undefined) {
-      this.playerListeners[playerIndex] = [];
-    }
-    this.playerListeners[playerIndex].push(playerListener);
-  }
-
-  public addWinListener(winListener: WinListener): void {
-    this.winListeners.push(winListener);
   }
 
   public get gameState(): GameState {
@@ -154,16 +117,16 @@ export class Game {
     };
   }
 
-  private static finalizeSetup(setup: Partial<GameSetup>): GameSetup {
+  private static finalizeSetup(setup?: Partial<GameSetup>): GameSetup {
     const defaultSetup = Game.getDefaultSetup();
     const finalSetup = {
-      boardHeight: setup.boardHeight ?? defaultSetup.boardHeight,
-      boardWidth: setup.boardWidth ?? defaultSetup.boardWidth,
-      cardsRatio: setup.cardsRatio ?? defaultSetup.cardsRatio,
-      playerCount: setup.playerCount ?? defaultSetup.playerCount,
-      seed: setup.seed ?? defaultSetup.seed,
+      boardHeight: setup?.boardHeight ?? defaultSetup.boardHeight,
+      boardWidth: setup?.boardWidth ?? defaultSetup.boardWidth,
+      cardsRatio: setup?.cardsRatio ?? defaultSetup.cardsRatio,
+      playerCount: setup?.playerCount ?? defaultSetup.playerCount,
+      seed: setup?.seed ?? defaultSetup.seed,
       treasureCardChances:
-        setup.treasureCardChances ?? defaultSetup.treasureCardChances,
+        setup?.treasureCardChances ?? defaultSetup.treasureCardChances,
     };
     if (
       !Board.isSizeValid(finalSetup.boardWidth) ||
@@ -184,7 +147,7 @@ export class Game {
     return finalSetup;
   }
 
-  public static buildFromSetup(partialSetup: Partial<GameSetup>): Game {
+  public static buildFromSetup(partialSetup?: Partial<GameSetup>): Game {
     // apply defaults
     const setup = Game.finalizeSetup(partialSetup);
     const generator = new RandomNumberGenerator(setup.seed);
@@ -207,7 +170,7 @@ export class Game {
       setup.treasureCardChances
     );
     const gameState = new GameState(board, allPlayerStates, []);
-    return new Game(gameState, false);
+    return new Game(gameState);
   }
 
   private static getTreasureCount(playerCount: number): number {
@@ -441,14 +404,15 @@ export class Game {
       generator,
       treasures
     );
+    const treasuresPerPlayer = treasures.length / numberOfPlayers;
     // distribute all treasures evenly to all players
     const allPlayersTreasures: Treasure[][] = [];
     for (let i = 0; i < numberOfPlayers; i++) {
       const playerTreasures: Treasure[] = [];
-      for (let i = 0; i < 26 / numberOfPlayers; i++) {
+      for (let i = 0; i < treasuresPerPlayer; i++) {
         const treasure = getRandomTreasure();
         if (treasure) {
-          playerTreasures.push();
+          playerTreasures.push(treasure);
         }
       }
       allPlayersTreasures.push(playerTreasures);
@@ -485,17 +449,15 @@ export class Game {
 
   public static buildFromString(str: string): Game {
     const obj = JSON.parse(str);
-    if (!("gameState" in obj) || !("gameEnded" in obj)) {
+    if (!("gameState" in obj)) {
       throw new Error("Invalid game string");
     }
-    return new Game(GameState.create(obj.gameState), obj.gameEnded);
+    return new Game(GameState.create(obj.gameState));
   }
 
   public stringify(): string {
-    const obj = {
+    return JSON.stringify({
       gameState: this._gameState,
-      gameEnded: this.gameEnded,
-    };
-    return JSON.stringify(obj);
+    });
   }
 }

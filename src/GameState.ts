@@ -41,22 +41,25 @@ export class GameState {
     );
   }
 
-  public isMoveLegal(move: Move): boolean {
+  /**
+   * @throws Error in case the move is not valid
+   */
+  public validateMove(move: Move) {
     if (!this.board.isShiftPositionValid(move.shiftPosition)) {
-      return false;
+      throw new Error("Invalid shift position");
     }
     const gameStatedAfterSlide = this.insertTile(move.shiftPosition);
     const playerState = gameStatedAfterSlide.allPlayerStates.getPlayerState(
       move.playerIndex
     );
     if (playerState === null) {
-      return false; // invalid player color
+      throw new Error("Invalid playerIndex");
     }
     if (move.from !== playerState.position) {
-      return false; // invalid starting position
+      throw new Error("Invalid starting position");
     }
     if (!gameStatedAfterSlide.board.isReachable(move.from, move.to)) {
-      return false;
+      throw new Error("Destination is not in reach");
     }
     let expectedTreasure: Treasure | null = null;
     const treasureAtTo = gameStatedAfterSlide.board.getTile(move.to).treasure;
@@ -66,15 +69,15 @@ export class GameState {
       }
     }
     if (!Treasure.compare(expectedTreasure, move.collectedTreasure)) {
-      return false;
+      throw new Error("Invalid collected treasure");
     }
-    return true;
   }
 
+  /**
+   * @throws Error in case the move is not valid
+   */
   public move(move: Move): GameState {
-    if (!this.isMoveLegal(move)) {
-      throw new Error("Illegal move");
-    }
+    this.validateMove(move);
     return this.rotateLooseTile(move.rotateBeforeShift)
       .insertTile(move.shiftPosition)
       .movePlayer(move.playerIndex, move.to)
@@ -212,8 +215,6 @@ export class GameState {
   }
 
   public equals(other: GameState): boolean {
-    // console.log(this.allPlayerStates.equals(other.allPlayerStates));
-    // console.log(this.board.equals(other.board));
     return (
       this.allPlayerStates.equals(other.allPlayerStates) &&
       this.board.equals(other.board)
