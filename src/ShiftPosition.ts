@@ -19,4 +19,8 @@ export class ShiftPosition {
   public get shiftVector(): Vec2 {
     return new HeadingHelper(this.heading).vec2;
   }
+
+  public static create(instance: ShiftPosition): ShiftPosition {
+    return new ShiftPosition(instance.heading, instance.index);
+  }
 }

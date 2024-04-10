@@ -57,7 +57,7 @@ export class Board {
   ): Path | null {
     const distances: number[][] = [];
     for (let x = 0; x < this.width; x++) {
-      const column = [];
+      const column: number[] = [];
       for (let y = 0; y < this.height; y++) {
         column[y] = Number.MAX_SAFE_INTEGER;
       }
@@ -112,7 +112,7 @@ export class Board {
   public getReachablePositions(from: BoardPosition): BoardPosition[] {
     const checkedLocations: boolean[][] = [];
     for (let x = 0; x < this.width; x++) {
-      const column = [];
+      const column: boolean[] = [];
       for (let y = 0; y < this.height; y++) {
         column[y] = false;
       }
@@ -146,7 +146,7 @@ export class Board {
   public isReachable(from: BoardPosition, to: BoardPosition): boolean {
     const checkedLocations: boolean[][] = [];
     for (let x = 0; x < this.width; x++) {
-      const column = [];
+      const column: boolean[] = [];
       for (let y = 0; y < this.height; y++) {
         column[y] = false;
       }
@@ -181,7 +181,7 @@ export class Board {
   }
 
   public static getValidSizes(maxSize: number): number[] {
-    const validSizes = [];
+    const validSizes: number[] = [];
     for (let i = 0; i <= maxSize; i++) {
       if (Board.isSizeValid(i)) {
         validSizes.push(i);
@@ -247,8 +247,8 @@ export class Board {
     return homePositions[playerIndex];
   }
 
-  public generateValieShiftPositions(): ShiftPosition[] {
-    const shiftPositions = [];
+  public generateValidShiftPositions(): ShiftPosition[] {
+    const shiftPositions: ShiftPosition[] = [];
     // north
     for (let i = 1; i < this.width - 1; i += 2) {
       shiftPositions.push(new ShiftPosition(Heading.NORTH, i));
@@ -311,7 +311,7 @@ export class Board {
   private copyTiles(): PathTile[][] {
     const newTiles: PathTile[][] = [];
     for (const column of this.tiles) {
-      const newColumn = [];
+      const newColumn: PathTile[] = [];
       for (const tile of column) {
         newColumn.push(tile);
       }
@@ -343,5 +343,17 @@ export class Board {
       }
     }
     return true;
+  }
+
+  static create(instance: Board): Board {
+    const tiles: PathTile[][] = [];
+    for (const row of instance.tiles) {
+      const newRow: PathTile[] = [];
+      for (const tile of row) {
+        newRow.push(PathTile.create(tile));
+      }
+      tiles.push(newRow);
+    }
+    return new Board(tiles, PathTile.create(instance.looseTile));
   }
 }

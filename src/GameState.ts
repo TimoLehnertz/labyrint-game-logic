@@ -8,6 +8,7 @@ import { ShiftPosition } from "./ShiftPosition";
 import { Move } from "./Move";
 import { PlayerState } from "./PlayerState";
 import { Treasure } from "./Treasure";
+import { PathTile } from "./PathTile";
 
 /**
  * Gamestate class representing the state of a game
@@ -28,6 +29,18 @@ export class GameState {
     this.historyMoves = historyMoves;
   }
 
+  public static create(instance: GameState): GameState {
+    const historyMoves: Move[] = [];
+    for (const historyMove of instance.historyMoves) {
+      historyMoves.push(Move.create(historyMove));
+    }
+    return new GameState(
+      Board.create(instance.board),
+      AllPlayerStates.create(instance.allPlayerStates),
+      historyMoves
+    );
+  }
+
   public isMoveLegal(move: Move): boolean {
     if (!this.board.isShiftPositionValid(move.shiftPosition)) {
       return false;
@@ -45,7 +58,7 @@ export class GameState {
     if (!gameStatedAfterSlide.board.isReachable(move.from, move.to)) {
       return false;
     }
-    let expectedTreasure = null;
+    let expectedTreasure: Treasure | null = null;
     const treasureAtTo = gameStatedAfterSlide.board.getTile(move.to).treasure;
     if (treasureAtTo !== null) {
       if (playerState.currentTreasure?.equals(treasureAtTo)) {
@@ -179,7 +192,7 @@ export class GameState {
   }
 
   private copyHistory(): Move[] {
-    const newHistory = [];
+    const newHistory: Move[] = [];
     for (const historyMove of this.historyMoves) {
       newHistory.push(historyMove);
     }

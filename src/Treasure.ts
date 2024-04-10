@@ -28,4 +28,8 @@ export class Treasure {
     }
     return true;
   }
+
+  public static create(instance: Treasure): Treasure {
+    return new Treasure(instance.id);
+  }
 }

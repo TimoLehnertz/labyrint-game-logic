@@ -98,4 +98,13 @@ export class PathTile {
     }
     return true;
   }
+
+  public static create(instance: PathTile): PathTile {
+    return new PathTile(
+      instance.tileType,
+      instance.treasure === null ? null : Treasure.create(instance.treasure),
+      instance.rotation,
+      instance.homeOfPlayerIndex
+    );
+  }
 }

@@ -1,9 +1,17 @@
 export { AllPlayerStates } from "./AllPlayerStates";
 export { Board } from "./Board";
 export { BoardPosition } from "./BoardPosition";
-export { PlayerListener, GameSetup, WinListener, Game } from "./Game";
+export {
+  PlayerListener,
+  GameSetup,
+  WinListener,
+  Game,
+  CardRatios,
+  GameTileType,
+  TreasureCardChances,
+} from "./Game";
 export { GameState } from "./GameState";
-export { Heading } from "./Heading";
+export { Heading, HeadingHelper } from "./Heading";
 export { Move } from "./Move";
 export { generateMoves, generateShiftPositions } from "./MoveGenerator";
 export { OpenSides } from "./OpenSides";

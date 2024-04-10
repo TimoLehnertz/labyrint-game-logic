@@ -21,7 +21,7 @@ export class AllPlayerStates {
   }
 
   private copyPlayerStates(): PlayerState[] {
-    const newAllPlayerStates = [];
+    const newAllPlayerStates: PlayerState[] = [];
     for (const playerState of this.allPlayerStates) {
       newAllPlayerStates.push(playerState);
     }
@@ -89,7 +89,10 @@ export class AllPlayerStates {
     playerIndex: number;
     playerState: PlayerState;
   }[] {
-    const playerStates = [];
+    const playerStates: {
+      playerIndex: number;
+      playerState: PlayerState;
+    }[] = [];
     for (let i = 0; i < this.allPlayerStates.length; i++) {
       const playerState = this.allPlayerStates[i];
       if (playerState.remainingTreasureCount === 0) {
@@ -114,5 +117,13 @@ export class AllPlayerStates {
       }
     }
     return true;
+  }
+
+  public static create(instance: AllPlayerStates): AllPlayerStates {
+    const allPlayerStates: PlayerState[] = [];
+    for (const playerState of instance.allPlayerStates) {
+      allPlayerStates.push(PlayerState.create(playerState));
+    }
+    return new AllPlayerStates(allPlayerStates, instance.playerIndexToMove);
   }
 }

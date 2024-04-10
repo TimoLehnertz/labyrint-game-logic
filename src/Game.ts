@@ -26,27 +26,13 @@ export interface TreasureCardChances {
 export interface GameSetup {
   seed: string;
   playerCount: number;
-  boardWidth?: number;
-  boardHeight?: number;
-  cardsRatio?: CardRatios;
-  treasureCardChances?: TreasureCardChances;
+  boardWidth: number;
+  boardHeight: number;
+  cardsRatio: CardRatios;
+  treasureCardChances: TreasureCardChances;
 }
 
 export type GameTileType = "fix" | "homePoint" | TileType;
-
-const defaultCardsRatio: CardRatios = {
-  lCards: 15 / 34,
-  streightCards: 13 / 34,
-  tCards: 6 / 34,
-};
-
-const defaultTreasureCardChances: TreasureCardChances = {
-  lCardTreasureChance: 6 / 15,
-  streightCardTreasureChance: 0,
-  tCardTreasureChance: 1,
-  fixCardTreasureChance: 1,
-};
-
 export interface PlayerListener {
   yourTurn: (gameState: GameState, move: (move: Move) => boolean) => void;
 }
@@ -75,7 +61,6 @@ export class Game {
   /**
    * Game Logic -------------------
    */
-
   public move(move: Move): boolean {
     if (this.redoHistory.length > 0) {
       return false;
@@ -149,29 +134,59 @@ export class Game {
   /**
    * Setup logic
    */
-  public static buildFromSetup(setup: GameSetup): Game {
-    // apply defaults
-    setup.boardWidth ??= 7;
-    setup.boardHeight ??= 7;
-    setup.cardsRatio ??= defaultCardsRatio;
-    setup.treasureCardChances =
-      setup.treasureCardChances ?? defaultTreasureCardChances;
+  public static getDefaultSetup(): GameSetup {
+    return {
+      playerCount: 4,
+      seed: "seed",
+      boardHeight: 7,
+      boardWidth: 7,
+      cardsRatio: {
+        lCards: 15 / 34,
+        streightCards: 13 / 34,
+        tCards: 6 / 34,
+      },
+      treasureCardChances: {
+        lCardTreasureChance: 6 / 15,
+        streightCardTreasureChance: 0,
+        tCardTreasureChance: 1,
+        fixCardTreasureChance: 1,
+      },
+    };
+  }
+
+  private static finalizeSetup(setup: Partial<GameSetup>): GameSetup {
+    const defaultSetup = Game.getDefaultSetup();
+    const finalSetup = {
+      boardHeight: setup.boardHeight ?? defaultSetup.boardHeight,
+      boardWidth: setup.boardWidth ?? defaultSetup.boardWidth,
+      cardsRatio: setup.cardsRatio ?? defaultSetup.cardsRatio,
+      playerCount: setup.playerCount ?? defaultSetup.playerCount,
+      seed: setup.seed ?? defaultSetup.seed,
+      treasureCardChances:
+        setup.treasureCardChances ?? defaultSetup.treasureCardChances,
+    };
     if (
-      !Board.isSizeValid(setup.boardWidth) ||
-      !Board.isSizeValid(setup.boardHeight)
+      !Board.isSizeValid(finalSetup.boardWidth) ||
+      !Board.isSizeValid(finalSetup.boardHeight)
     ) {
       throw new Error(`Invalid board size`);
     }
     const maxPlayers = Board.getMaxPlayerCount(
-      setup.boardWidth,
-      setup.boardHeight
+      finalSetup.boardWidth,
+      finalSetup.boardHeight
     );
-    if (setup.playerCount > maxPlayers) {
+    if (finalSetup.playerCount > maxPlayers) {
       throw new Error(`Too many players. Max ${maxPlayers}`);
     }
-    if (setup.playerCount < 2) {
+    if (finalSetup.playerCount < 2) {
       throw new Error("Too few players. Min 2");
     }
+    return finalSetup;
+  }
+
+  public static buildFromSetup(partialSetup: Partial<GameSetup>): Game {
+    // apply defaults
+    const setup = Game.finalizeSetup(partialSetup);
     const generator = new RandomNumberGenerator(setup.seed);
     const treasures = Game.generateTreasures(
       Game.getTreasureCount(setup.playerCount)
@@ -461,7 +476,7 @@ export class Game {
   }
 
   public static generateTreasures(amount: number): Treasure[] {
-    const treasures = [];
+    const treasures: Treasure[] = [];
     for (let i = 0; i < amount; i++) {
       treasures.push(new Treasure(i));
     }
@@ -473,7 +488,7 @@ export class Game {
     if (!("gameState" in obj) || !("gameEnded" in obj)) {
       throw new Error("Invalid game string");
     }
-    return new Game(obj.gameState, obj.gameEnded);
+    return new Game(GameState.create(obj.gameState), obj.gameEnded);
   }
 
   public stringify(): string {

@@ -84,7 +84,7 @@ export class PlayerState {
    * Treasures are immutable so we dont need to make a deep copy here
    */
   private copyFoundTreasures(): Treasure[] {
-    const newFoundTreasures = [];
+    const newFoundTreasures: Treasure[] = [];
     for (const foundTreasure of this.foundTreasures) {
       newFoundTreasures.push(foundTreasure);
     }
@@ -95,7 +95,7 @@ export class PlayerState {
    * Treasures are immutable so we dont need to make a deep copy here
    */
   private copyRemainingTreasures(): Treasure[] {
-    const newRemainingTreasures = [];
+    const newRemainingTreasures: Treasure[] = [];
     for (const remainingTreasure of this.remainingTreasures) {
       newRemainingTreasures.push(remainingTreasure);
     }
@@ -130,5 +130,24 @@ export class PlayerState {
       }
     }
     return true;
+  }
+
+  public static create(instance: PlayerState): PlayerState {
+    const foundTreasures: Treasure[] = [];
+    for (const foundTreasure of instance.foundTreasures) {
+      foundTreasures.push(Treasure.create(foundTreasure));
+    }
+    const remainingTreasures: Treasure[] = [];
+    for (const remainingTreasure of instance.remainingTreasures) {
+      remainingTreasures.push(Treasure.create(remainingTreasure));
+    }
+    return new PlayerState(
+      foundTreasures,
+      remainingTreasures,
+      instance.currentTreasure !== null
+        ? Treasure.create(instance.currentTreasure)
+        : null,
+      BoardPosition.create(instance.position)
+    );
   }
 }

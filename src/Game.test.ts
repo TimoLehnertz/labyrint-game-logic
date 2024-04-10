@@ -1,9 +1,11 @@
+import { Board } from "./Board";
 import { BoardPosition } from "./BoardPosition";
 import { Game } from "./Game";
 import { GameState } from "./GameState";
 import { generateMoves, generateShiftPositions } from "./MoveGenerator";
 import { TileType } from "./PathTile";
 import { RandomNumberGenerator } from "./RandomNumberGenerator";
+import { Treasure } from "./Treasure";
 
 test("seeding", () => {
   const game1 = Game.buildFromSetup({
@@ -35,6 +37,11 @@ test("stringify", () => {
   });
   const game2 = Game.buildFromString(game1.stringify());
   expect(game1.gameState.equals(game2.gameState)).toBe(true);
+  // testing if the instances actually work
+  const shiftPositions = generateShiftPositions(game2.gameState);
+  const moves = generateMoves(game2.gameState, shiftPositions[0], 0);
+  expect(moves.length > 0).toBeTruthy();
+  expect(game2.move(moves[0])).toBeTruthy();
 });
 
 test("undo redo", () => {
@@ -47,7 +54,7 @@ test("undo redo", () => {
   const moves = generateMoves(game.gameState, shiftPositions[0], 0);
 
   const gameStateAtStart = game.gameState;
-  game.move(moves[0]);
+  expect(game.move(moves[0])).toBeTruthy();
   const gameStateAfterMove = game.gameState;
   game.undoLastMove();
   const gameStateAfterUndo = game.gameState;
@@ -80,7 +87,6 @@ test("getRandomTreasureProvider", () => {
   expect(homeTreasure).toBeNull;
   for (let i = 0; i < 10; i++) {
     const treasure = provider("fix");
-    console.log(treasure);
     expect(treasure !== null).toBeTruthy();
   }
   const treasure = provider("fix");
@@ -144,7 +150,7 @@ test("treasures", () => {
     playerCount: 4,
     seed: "Hello world",
   });
-  const treasures = [];
+  const treasures: Treasure[] = [];
   for (let x = 0; x < 7; x++) {
     for (let y = 0; y < 7; y++) {
       const tile = game.gameState.board.getTile(new BoardPosition(x, y));
@@ -153,5 +159,33 @@ test("treasures", () => {
       }
     }
   }
-  console.log(treasures);
+});
+
+// expect(homePoints[0].equals(new BoardPosition(0, 0))).toBeTruthy();
+// expect(homePoints[1].equals(new BoardPosition(0, 6))).toBeTruthy();
+// expect(homePoints[2].equals(new BoardPosition(6, 0))).toBeTruthy();
+// expect(homePoints[3].equals(new BoardPosition(6, 6))).toBeTruthy();
+
+test("homePositions", () => {
+  const game = Game.buildFromSetup({
+    playerCount: 4,
+    seed: "Hello world",
+  });
+  const homes: (number | null)[] = [];
+  homes.push(
+    game.gameState.board.getTile(new BoardPosition(0, 0)).homeOfPlayerIndex
+  );
+  homes.push(
+    game.gameState.board.getTile(new BoardPosition(0, 6)).homeOfPlayerIndex
+  );
+  homes.push(
+    game.gameState.board.getTile(new BoardPosition(6, 0)).homeOfPlayerIndex
+  );
+  homes.push(
+    game.gameState.board.getTile(new BoardPosition(6, 6)).homeOfPlayerIndex
+  );
+  expect(homes.length).toBe(4);
+  for (let i = 0; i < 4; i++) {
+    expect(homes[i]).toBe(i);
+  }
 });

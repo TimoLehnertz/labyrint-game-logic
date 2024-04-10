@@ -8,7 +8,7 @@ import { ShiftPosition } from "./ShiftPosition";
 // generateMoves(gameState).choose
 
 export function generateShiftPositions(gameState: GameState): ShiftPosition[] {
-  return gameState.board.generateValieShiftPositions();
+  return gameState.board.generateValidShiftPositions();
 }
 
 export function generateMoves(

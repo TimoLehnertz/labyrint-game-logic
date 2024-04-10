@@ -32,4 +32,17 @@ export class Move {
     this.to = to;
     this.collectedTreasure = collectedTreasure;
   }
+
+  public static create(instance: Move): Move {
+    return new Move(
+      instance.playerIndex,
+      instance.rotateBeforeShift,
+      ShiftPosition.create(instance.shiftPosition),
+      BoardPosition.create(instance.from),
+      BoardPosition.create(instance.to),
+      instance.collectedTreasure === null
+        ? null
+        : Treasure.create(instance.collectedTreasure)
+    );
+  }
 }

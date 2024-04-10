@@ -16,4 +16,8 @@ export class BoardPosition extends Vec2 {
   public add(b: Vec2): BoardPosition {
     return new BoardPosition(this.x + b.x, this.y + b.y);
   }
+
+  public static create(instance: BoardPosition): BoardPosition {
+    return new BoardPosition(instance.x, instance.y);
+  }
 }
