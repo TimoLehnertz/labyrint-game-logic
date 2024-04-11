@@ -64,30 +64,23 @@ export class Game {
     if (this._gameState.getWinnerIndex() !== null) {
       throw new Error("cant move after game has ended");
     }
-
     this._gameState.validateMove(move); // throws on error
     this._gameState = this._gameState.move(move);
     this.redoHistory = [];
-    return true;
   }
 
-  public undoLastMove(): boolean {
+  public undoLastMove() {
     const result = this._gameState.undoMove();
     this._gameState = result.newGameState;
-    if (result.undoneMove === null) {
-      return false;
-    }
     this.redoHistory.push(result.undoneMove);
-    return true;
   }
 
-  public redoLastMove(): boolean {
+  public redoLastMove() {
     const redoMove = this.redoHistory.pop();
     if (redoMove === undefined) {
-      return false;
+      throw new Error("no move to redo");
     }
     this._gameState = this._gameState.move(redoMove);
-    return true;
   }
 
   public get gameState(): GameState {

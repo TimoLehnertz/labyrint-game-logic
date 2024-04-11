@@ -21,8 +21,8 @@ export class RandomNumberGenerator {
       h2 = 3144134277,
       h3 = 1013904242,
       h4 = 2773480762;
-    for (let i = 0, k; i < str.length; i++) {
-      k = str.charCodeAt(i);
+    for (let i = 0; i < str.length; i++) {
+      const k = str.charCodeAt(i);
       h1 = h2 ^ Math.imul(h1 ^ k, 597399067);
       h2 = h3 ^ Math.imul(h2 ^ k, 2869860233);
       h3 = h4 ^ Math.imul(h3 ^ k, 951274213);

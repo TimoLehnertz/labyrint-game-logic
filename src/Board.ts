@@ -3,7 +3,7 @@
  */
 import { BoardPosition } from "./BoardPosition";
 import { Heading, HeadingHelper } from "./Heading";
-import { Path } from "./Path";
+import { Path, PathPart } from "./Path";
 import { ShiftPosition } from "./ShiftPosition";
 import { PathTile } from "./PathTile";
 import { Treasure } from "./Treasure";
@@ -51,10 +51,7 @@ export class Board {
     return new Board(newTiles, lastTile);
   }
 
-  public generateShortestPath(
-    from: BoardPosition,
-    to: BoardPosition
-  ): Path | null {
+  public generateDistances(from: BoardPosition): number[][] {
     const distances: number[][] = [];
     for (let x = 0; x < this.width; x++) {
       const column: number[] = [];
@@ -64,49 +61,78 @@ export class Board {
       distances[x] = column;
     }
     const checkDistance = (position: BoardPosition, distance: number) => {
-      if (!position.isInBounds(this.width, this.height)) {
-        return;
-      }
       if (distances[position.x][position.y] > distance) {
         distances[position.x][position.y] = distance;
       } else {
         return;
       }
-      const tile = this.tiles[position.x][position.y];
+      const tile = this.getTile(position);
       for (const openHeading of tile.openSides.headings) {
         const direction = new HeadingHelper(openHeading).vec2;
-        checkDistance(position.add(direction), distance + 1);
+        const nextPos = position.add(direction);
+        if (!nextPos.isInBounds(this.width, this.height)) {
+          continue;
+        }
+        const nextTile = this.getTile(nextPos);
+        if (!nextTile.openSides.isOpposingOpen(openHeading)) {
+          continue;
+        }
+        checkDistance(nextPos, distance + 1);
       }
     };
     // build distance grid
     checkDistance(from, 0);
+    return distances;
+  }
+
+  public generateShortestPath(
+    from: BoardPosition,
+    to: BoardPosition
+  ): Path | null {
+    if (from.equals(to)) {
+      return new Path([]);
+    }
+    const distances = this.generateDistances(to);
     // check if reachable
-    if (distances[to.x][to.y] === Number.MAX_SAFE_INTEGER) {
+    if (distances[from.x][from.y] === Number.MAX_SAFE_INTEGER) {
       return null;
     }
-    const pathPositions: BoardPosition[] = [];
+    const pathParts: PathPart[] = [];
     let currentLocation = from;
     while (!currentLocation.equals(to)) {
       let minDistance = Number.MAX_SAFE_INTEGER;
       let bestHeading: Heading | null = null;
-      for (const heading of HeadingHelper.getAllHeadings()) {
-        const newLocation = currentLocation.add(
+      const currentTile = this.getTile(currentLocation);
+      for (const heading of currentTile.openSides.headings) {
+        const nextLocation = currentLocation.add(
           new HeadingHelper(heading).vec2
         );
-        if (!newLocation.isInBounds(this.width, this.height)) {
+        if (!nextLocation.isInBounds(this.width, this.height)) {
           continue;
         }
-        if (distances[newLocation.x][newLocation.y] <= minDistance) {
-          minDistance = distances[newLocation.x][newLocation.y];
+        const nextTile = this.getTile(nextLocation);
+        if (!nextTile.openSides.isOpposingOpen(heading)) {
+          continue;
+        }
+        if (distances[nextLocation.x][nextLocation.y] < minDistance) {
+          minDistance = distances[nextLocation.x][nextLocation.y];
           bestHeading = heading;
         }
       }
-      pathPositions.push(currentLocation);
-      currentLocation = currentLocation.add(
+      const nextPos = currentLocation.add(
         new HeadingHelper(bestHeading ?? Heading.NORTH).vec2
       );
+      if (bestHeading === null) {
+        throw new Error("Bug");
+      }
+      pathParts.push({
+        from: currentLocation,
+        to: nextPos,
+        heading: bestHeading,
+      });
+      currentLocation = nextPos;
     }
-    return new Path(pathPositions);
+    return new Path(pathParts);
   }
 
   public getReachablePositions(from: BoardPosition): BoardPosition[] {
@@ -132,48 +158,27 @@ export class Board {
       const tile = this.tiles[position.x][position.y];
       for (const openHeading of tile.openSides.headings) {
         const direction = new HeadingHelper(openHeading).vec2;
-        check(position.add(direction));
+        const nextPos = position.add(direction);
+        if (!nextPos.isInBounds(this.width, this.height)) {
+          continue;
+        }
+        const nextTile = this.tiles[nextPos.x][nextPos.y];
+        if (!nextTile.openSides.isOpposingOpen(openHeading)) {
+          continue;
+        }
+        check(nextPos);
       }
     };
     check(from);
     return reachablePositions;
   }
 
-  /**
-   * Same algorithm as getReachablePositions just returns as soon as
-   * path is found so it is a faster or equal when there is a path
-   */
   public isReachable(from: BoardPosition, to: BoardPosition): boolean {
-    const checkedLocations: boolean[][] = [];
-    for (let x = 0; x < this.width; x++) {
-      const column: boolean[] = [];
-      for (let y = 0; y < this.height; y++) {
-        column[y] = false;
-      }
-      checkedLocations[x] = column;
-    }
-    const check = (position: BoardPosition): boolean => {
-      if (
-        !position.isInBounds(this.width, this.height) ||
-        checkedLocations[position.x][position.y]
-      ) {
-        return false;
-      }
-      if (position.equals(to)) {
-        return true;
-      }
-      checkedLocations[position.x][position.y] = true;
-      // check surrounding
-      const tile = this.tiles[position.x][position.y];
-      for (const openHeading of tile.openSides.headings) {
-        const direction = new HeadingHelper(openHeading).vec2;
-        if (check(position.add(direction))) {
-          return true;
-        }
-      }
+    const distances = this.generateDistances(from);
+    if (distances[to.x][to.y] === Number.MAX_SAFE_INTEGER) {
       return false;
-    };
-    return check(from);
+    }
+    return true;
   }
 
   public rotateLooseTile(rotateBeforeShift: number): Board {
@@ -206,6 +211,9 @@ export class Board {
   }
 
   public static getHomePositionIncrement(size: number): number {
+    if (size < 7) {
+      throw new Error("Invalid size");
+    }
     size -= 1;
     if (size % 4 === 0) {
       return 4;
@@ -228,14 +236,13 @@ export class Board {
     const YIncrement = Board.getHomePositionIncrement(height);
     for (let x = 0; x < width; x += xIncrement) {
       for (let y = 0; y < height; y += YIncrement) {
-        homePositions.push(new BoardPosition(x, y));
+        const pos = new BoardPosition(x, y);
+        if (pos.isEdge(width, height)) {
+          homePositions.push(pos);
+        }
       }
     }
     return homePositions;
-  }
-
-  public getPlayerHomePosition(playerIndex: number): BoardPosition {
-    return Board.getPlayerHomePosition(playerIndex, this.width, this.height);
   }
 
   public static getPlayerHomePosition(
@@ -249,33 +256,36 @@ export class Board {
 
   public generateValidShiftPositions(): ShiftPosition[] {
     const shiftPositions: ShiftPosition[] = [];
-    // north
-    for (let i = 1; i < this.width - 1; i += 2) {
-      shiftPositions.push(new ShiftPosition(Heading.NORTH, i));
+    for (const heading of [Heading.NORTH, Heading.SOUTH]) {
+      let index = 0;
+      for (let x = 1; x < this.width - 1; x += 2) {
+        shiftPositions.push(new ShiftPosition(heading, index++));
+      }
     }
-    // east
-    for (let i = 1; i < this.height - 1; i += 2) {
-      shiftPositions.push(new ShiftPosition(Heading.EAST, i));
-    }
-    // south
-    for (let i = 1; i < this.width - 1; i += 2) {
-      shiftPositions.push(new ShiftPosition(Heading.SOUTH, i));
-    }
-    // west
-    for (let i = 1; i < this.height - 1; i += 2) {
-      shiftPositions.push(new ShiftPosition(Heading.WEST, i));
+    for (const heading of [Heading.WEST, Heading.EAST]) {
+      let index = 0;
+      for (let x = 1; x < this.height - 1; x += 2) {
+        shiftPositions.push(new ShiftPosition(heading, index++));
+      }
     }
     return shiftPositions;
   }
 
+  private static getShiftPositionCount(size: number): number {
+    return (size - 1) / 2;
+  }
+
   public isShiftPositionValid(shiftPosition: ShiftPosition): boolean {
+    if (shiftPosition.index < 0 || !Number.isInteger(shiftPosition.index)) {
+      return false;
+    }
     switch (shiftPosition.heading) {
       case Heading.NORTH:
       case Heading.SOUTH:
-        return shiftPosition.index < this.width;
+        return shiftPosition.index < Board.getShiftPositionCount(this.width);
       case Heading.EAST:
       case Heading.WEST:
-        return shiftPosition.index < this.height;
+        return shiftPosition.index < Board.getShiftPositionCount(this.height);
     }
   }
 

@@ -17,10 +17,14 @@ export class ShiftPosition {
   }
 
   public get shiftVector(): Vec2 {
-    return new HeadingHelper(this.heading).vec2;
+    return new HeadingHelper(this.heading).vec2.multiply(-1);
   }
 
   public static create(instance: ShiftPosition): ShiftPosition {
     return new ShiftPosition(instance.heading, instance.index);
+  }
+
+  public equals(other: ShiftPosition): boolean {
+    return this.heading === other.heading && this.heading === other.heading;
   }
 }

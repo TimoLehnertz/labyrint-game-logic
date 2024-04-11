@@ -22,3 +22,4 @@ export { RandomNumberGenerator } from "./RandomNumberGenerator";
 export { ShiftPosition } from "./ShiftPosition";
 export { Treasure } from "./Treasure";
 export { Vec2 } from "./Vec2";
+export { printBoard, stringifyTile } from "./Utils";

@@ -13,6 +13,15 @@ export class BoardPosition extends Vec2 {
     return this.x >= 0 && this.y >= 0 && this.x < width && this.y < height;
   }
 
+  public isEdge(width: number, height: number): boolean {
+    return (
+      this.x === 0 ||
+      this.y === 0 ||
+      this.x === width - 1 ||
+      this.y === height - 1
+    );
+  }
+
   public add(b: Vec2): BoardPosition {
     return new BoardPosition(this.x + b.x, this.y + b.y);
   }

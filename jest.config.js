@@ -4,5 +4,6 @@ export default {
     "^.+\\.tsx?$": "ts-jest",
   },
   testRegex: "(/__tests__/.*|(\\.|/)(test|spec))\\.tsx?$",
+  // testRegex: "MoveGenerator\\.test\\.ts$",
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
 };

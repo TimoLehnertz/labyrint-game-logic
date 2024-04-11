@@ -21,7 +21,6 @@ export class PathTile {
   public readonly treasure: Treasure | null;
   public readonly rotation: number;
   public readonly homeOfPlayerIndex: number | null;
-  private openSidesCache: OpenSides | null = null;
 
   public constructor(
     tileType: TileType,
@@ -36,11 +35,7 @@ export class PathTile {
   }
 
   public get openSides(): OpenSides {
-    if (this.openSidesCache !== null) {
-      return this.openSidesCache;
-    }
-    this.openSidesCache = new OpenSides(this.tileType, this.rotation);
-    return this.openSidesCache;
+    return new OpenSides(this.tileType, this.rotation);
   }
 
   private static normalizeRotation(rotation: number): number {

@@ -8,10 +8,9 @@ import { ShiftPosition } from "./ShiftPosition";
 import { Move } from "./Move";
 import { PlayerState } from "./PlayerState";
 import { Treasure } from "./Treasure";
-import { PathTile } from "./PathTile";
 
 /**
- * Gamestate class representing the state of a game
+ * GameState class representing the state of a game
  * This class exposes all information about the game that a player could legally know by looking at the board
  */
 export class GameState {
@@ -29,18 +28,6 @@ export class GameState {
     this.historyMoves = historyMoves;
   }
 
-  public static create(instance: GameState): GameState {
-    const historyMoves: Move[] = [];
-    for (const historyMove of instance.historyMoves) {
-      historyMoves.push(Move.create(historyMove));
-    }
-    return new GameState(
-      Board.create(instance.board),
-      AllPlayerStates.create(instance.allPlayerStates),
-      historyMoves
-    );
-  }
-
   /**
    * @throws Error in case the move is not valid
    */
@@ -55,7 +42,8 @@ export class GameState {
     if (playerState === null) {
       throw new Error("Invalid playerIndex");
     }
-    if (move.from !== playerState.position) {
+    if (!move.from.equals(playerState.position)) {
+      console.log(move.from, playerState.position);
       throw new Error("Invalid starting position");
     }
     if (!gameStatedAfterSlide.board.isReachable(move.from, move.to)) {
@@ -69,6 +57,8 @@ export class GameState {
       }
     }
     if (!Treasure.compare(expectedTreasure, move.collectedTreasure)) {
+      console.log(expectedTreasure, move.collectedTreasure);
+      console.log(JSON.stringify(move));
       throw new Error("Invalid collected treasure");
     }
   }
@@ -86,12 +76,9 @@ export class GameState {
       .addMoveToHistory(move);
   }
 
-  public undoMove(): { newGameState: GameState; undoneMove: Move | null } {
+  public undoMove(): { newGameState: GameState; undoneMove: Move } {
     if (this.historyMoves.length === 0) {
-      return {
-        newGameState: this,
-        undoneMove: null,
-      };
+      throw new Error("no moves to undo");
     }
     const move = this.historyMoves[this.historyMoves.length - 1];
     return {
@@ -113,7 +100,7 @@ export class GameState {
     );
   }
 
-  private insertTile(shiftPosition: ShiftPosition): GameState {
+  public insertTile(shiftPosition: ShiftPosition): GameState {
     const firstMovedTilePosition =
       this.board.getFirstMovedTilePosition(shiftPosition);
     const lastMovedTilePosition =
@@ -156,8 +143,10 @@ export class GameState {
   public getWinnerIndex(): number | null {
     const playerStates = this.allPlayerStates.getPlayerStatesWithAllTreasures();
     for (const player of playerStates) {
-      const playerHomePoint = this.board.getPlayerHomePosition(
-        player.playerIndex
+      const playerHomePoint = Board.getPlayerHomePosition(
+        player.playerIndex,
+        this.board.width,
+        this.board.height
       );
       if (player.playerState.position.equals(playerHomePoint)) {
         return player.playerIndex;
@@ -218,6 +207,18 @@ export class GameState {
     return (
       this.allPlayerStates.equals(other.allPlayerStates) &&
       this.board.equals(other.board)
+    );
+  }
+
+  public static create(instance: GameState): GameState {
+    const historyMoves: Move[] = [];
+    for (const historyMove of instance.historyMoves) {
+      historyMoves.push(Move.create(historyMove));
+    }
+    return new GameState(
+      Board.create(instance.board),
+      AllPlayerStates.create(instance.allPlayerStates),
+      historyMoves
     );
   }
 }

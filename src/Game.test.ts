@@ -1,6 +1,10 @@
 import { BoardPosition } from "./BoardPosition";
 import { Game } from "./Game";
-import { generateMoves, generateShiftPositions } from "./MoveGenerator";
+import {
+  generateMoves,
+  generateRandomMove,
+  generateShiftPositions,
+} from "./MoveGenerator";
 import { TileType } from "./PathTile";
 import { RandomNumberGenerator } from "./RandomNumberGenerator";
 import { Treasure } from "./Treasure";
@@ -39,7 +43,7 @@ test("stringify", () => {
   const shiftPositions = generateShiftPositions(game2.gameState);
   const moves = generateMoves(game2.gameState, shiftPositions[0], 0);
   expect(moves.length > 0).toBeTruthy();
-  expect(game2.move(moves[0])).toBeTruthy();
+  game2.move(moves[0]);
 });
 
 test("undo redo", () => {
@@ -52,12 +56,19 @@ test("undo redo", () => {
   const moves = generateMoves(game.gameState, shiftPositions[0], 0);
 
   const gameStateAtStart = game.gameState;
-  expect(game.move(moves[0])).toBeTruthy();
+  game.move(moves[0]);
   const gameStateAfterMove = game.gameState;
   game.undoLastMove();
   const gameStateAfterUndo = game.gameState;
   game.redoLastMove();
   const gameStateAfterRedo = game.gameState;
+
+  try {
+    game.redoLastMove();
+    fail("expected error");
+  } catch (e) {
+    expect(e.message).toBe("no move to redo");
+  }
 
   expect(gameStateAtStart.equals(gameStateAfterMove)).toBe(false);
   expect(gameStateAtStart.equals(gameStateAfterUndo)).toBe(true);
@@ -183,10 +194,64 @@ test("homePositions", () => {
   }
 });
 
+test("invalid size", () => {
+  try {
+    Game.buildFromSetup({
+      boardHeight: 3,
+    });
+    fail("expected error");
+  } catch (e) {
+    expect(e.message).toBe("Invalid board size");
+  }
+});
+
+test("too many players", () => {
+  try {
+    Game.buildFromSetup({
+      playerCount: 5,
+    });
+    fail("expected error");
+  } catch (e) {
+    expect(e.message).toBe("Too many players. Max 4");
+  }
+});
+
+test("Too few players", () => {
+  try {
+    Game.buildFromSetup({
+      playerCount: 1,
+    });
+    fail("expected error");
+  } catch (e) {
+    expect(e.message).toBe("Too few players. Min 2");
+  }
+});
+
 test("move", () => {
   let game = Game.buildFromSetup();
   game = Game.buildFromString(game.stringify());
   const shiftPositions = generateShiftPositions(game.gameState);
   const moves = generateMoves(game.gameState, shiftPositions[0], 0);
-  expect(game.move(moves[0])).toBeTruthy();
+  game.move(moves[0]);
+});
+
+test("move without redo", () => {
+  let game = Game.buildFromSetup();
+  game.move(generateRandomMove(game.gameState));
+  const move = generateRandomMove(game.gameState);
+  game.undoLastMove();
+  try {
+    game.move(move);
+    fail("expected error");
+  } catch (e) {
+    expect(e.message).toBe("redo all moves before moving a new move");
+  }
+});
+
+test("build from invalid string", () => {
+  try {
+    Game.buildFromString("{}");
+  } catch (e) {
+    expect(e.message).toBe("Invalid game string");
+  }
 });

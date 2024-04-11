@@ -35,6 +35,13 @@ export class PlayerState {
     );
   }
 
+  public get lastFoundTreasure(): Treasure | null {
+    if (this.foundTreasures.length === 0) {
+      return null;
+    }
+    return this.foundTreasures[this.foundTreasures.length - 1];
+  }
+
   public get foundTreasureCount(): number {
     return this.foundTreasures.length;
   }

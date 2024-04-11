@@ -45,4 +45,15 @@ export class Move {
         : Treasure.create(instance.collectedTreasure)
     );
   }
+
+  public equals(other: Move): boolean {
+    return (
+      this.playerIndex !== other.playerIndex &&
+      this.rotateBeforeShift !== other.rotateBeforeShift &&
+      this.shiftPosition.equals(other.shiftPosition) &&
+      this.from.equals(other.from) &&
+      this.to.equals(other.to) &&
+      Treasure.compare(this.collectedTreasure, other.collectedTreasure)
+    );
+  }
 }

@@ -12,7 +12,6 @@ export class OpenSides {
   public readonly eastOpen: boolean;
   public readonly southOpen: boolean;
   public readonly westOpen: boolean;
-  private headingsCache: Heading[] | null = null;
 
   public constructor(tileType: TileType, rotation: number) {
     switch (tileType) {
@@ -50,23 +49,33 @@ export class OpenSides {
     }
   }
 
-  public get headings(): Heading[] {
-    if (this.headingsCache !== null) {
-      return this.headingsCache;
+  public isOpposingOpen(heading: Heading): boolean {
+    switch (heading) {
+      case Heading.NORTH:
+        return this.southOpen;
+      case Heading.EAST:
+        return this.westOpen;
+      case Heading.SOUTH:
+        return this.northOpen;
+      case Heading.WEST:
+        return this.eastOpen;
     }
-    this.headingsCache = [];
+  }
+
+  public get headings(): Heading[] {
+    const headings: Heading[] = [];
     if (this.northOpen) {
-      this.headingsCache.push(Heading.NORTH);
+      headings.push(Heading.NORTH);
     }
     if (this.eastOpen) {
-      this.headingsCache.push(Heading.EAST);
+      headings.push(Heading.EAST);
     }
     if (this.southOpen) {
-      this.headingsCache.push(Heading.SOUTH);
+      headings.push(Heading.SOUTH);
     }
     if (this.westOpen) {
-      this.headingsCache.push(Heading.WEST);
+      headings.push(Heading.WEST);
     }
-    return this.headingsCache;
+    return headings;
   }
 }

@@ -80,28 +80,72 @@ test("T", () => {
   expect(openSides.westOpen).toBe(true);
 });
 
-test("getHeadings", () => {
+test("getHeadings T", () => {
   let headings = new OpenSides(TileType.T, 0).headings;
+  expect(headings.length).toBe(3);
+  expect(headings[0]).toBe(Heading.NORTH);
   expect(headings[1]).toBe(Heading.EAST);
   expect(headings[2]).toBe(Heading.WEST);
 
   headings = new OpenSides(TileType.T, 1).headings;
+  expect(headings.length).toBe(3);
   expect(headings[0]).toBe(Heading.NORTH);
   expect(headings[1]).toBe(Heading.EAST);
   expect(headings[2]).toBe(Heading.SOUTH);
 
   headings = new OpenSides(TileType.T, 2).headings;
+  expect(headings.length).toBe(3);
   expect(headings[0]).toBe(Heading.EAST);
   expect(headings[1]).toBe(Heading.SOUTH);
   expect(headings[2]).toBe(Heading.WEST);
 
   headings = new OpenSides(TileType.T, 3).headings;
+  expect(headings.length).toBe(3);
   expect(headings[0]).toBe(Heading.NORTH);
   expect(headings[1]).toBe(Heading.SOUTH);
   expect(headings[2]).toBe(Heading.WEST);
 });
 
-test("getHeadingsCache", () => {
-  const openSides = new OpenSides(TileType.T, 0);
-  expect(openSides.headings === openSides.headings).toBe(true);
+test("getHeadings L", () => {
+  let headings = new OpenSides(TileType.L, 0).headings;
+  expect(headings.length).toBe(2);
+  expect(headings[0]).toBe(Heading.EAST);
+  expect(headings[1]).toBe(Heading.SOUTH);
+
+  headings = new OpenSides(TileType.L, 1).headings;
+  expect(headings.length).toBe(2);
+  expect(headings[0]).toBe(Heading.SOUTH);
+  expect(headings[1]).toBe(Heading.WEST);
+
+  headings = new OpenSides(TileType.L, 2).headings;
+  expect(headings.length).toBe(2);
+  expect(headings[0]).toBe(Heading.NORTH);
+  expect(headings[1]).toBe(Heading.WEST);
+
+  headings = new OpenSides(TileType.L, 3).headings;
+  expect(headings.length).toBe(2);
+  expect(headings[0]).toBe(Heading.NORTH);
+  expect(headings[1]).toBe(Heading.EAST);
+});
+
+test("getHeadings Streight", () => {
+  let headings = new OpenSides(TileType.STREIGHT, 0).headings;
+  expect(headings.length).toBe(2);
+  expect(headings[0]).toBe(Heading.EAST);
+  expect(headings[1]).toBe(Heading.WEST);
+
+  headings = new OpenSides(TileType.STREIGHT, 1).headings;
+  expect(headings.length).toBe(2);
+  expect(headings[0]).toBe(Heading.NORTH);
+  expect(headings[1]).toBe(Heading.SOUTH);
+
+  headings = new OpenSides(TileType.STREIGHT, 2).headings;
+  expect(headings.length).toBe(2);
+  expect(headings[0]).toBe(Heading.EAST);
+  expect(headings[1]).toBe(Heading.WEST);
+
+  headings = new OpenSides(TileType.STREIGHT, 3).headings;
+  expect(headings.length).toBe(2);
+  expect(headings[0]).toBe(Heading.NORTH);
+  expect(headings[1]).toBe(Heading.SOUTH);
 });
