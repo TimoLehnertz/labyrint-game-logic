@@ -110,7 +110,7 @@ export class Game {
     };
   }
 
-  private static finalizeSetup(setup?: Partial<GameSetup>): GameSetup {
+  public static finalizeSetup(setup?: Partial<GameSetup>): GameSetup {
     const defaultSetup = Game.getDefaultSetup();
     const finalSetup = {
       boardHeight: setup?.boardHeight ?? defaultSetup.boardHeight,
