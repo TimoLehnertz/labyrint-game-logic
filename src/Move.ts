@@ -12,7 +12,8 @@ import { Treasure } from "./Treasure";
 export class Move {
   public readonly playerIndex: number;
   public readonly rotateBeforeShift: number; // multiple of 90deg cw
-  public readonly shiftPosition: ShiftPosition;
+  public readonly fromShiftPosition: ShiftPosition;
+  public readonly toShiftPosition: ShiftPosition;
   public readonly from: BoardPosition;
   public readonly to: BoardPosition;
   public readonly collectedTreasure: Treasure | null;
@@ -20,14 +21,16 @@ export class Move {
   public constructor(
     playerIndex: number,
     rotateBeforeShift: number,
-    shiftPosition: ShiftPosition,
+    fromShiftPosition: ShiftPosition,
+    toShiftPosition: ShiftPosition,
     from: BoardPosition,
     to: BoardPosition,
     collectedTreasure: Treasure | null
   ) {
     this.playerIndex = playerIndex;
     this.rotateBeforeShift = rotateBeforeShift;
-    this.shiftPosition = shiftPosition;
+    this.fromShiftPosition = fromShiftPosition;
+    this.toShiftPosition = toShiftPosition;
     this.from = from;
     this.to = to;
     this.collectedTreasure = collectedTreasure;
@@ -37,7 +40,8 @@ export class Move {
     return new Move(
       instance.playerIndex,
       instance.rotateBeforeShift,
-      ShiftPosition.create(instance.shiftPosition),
+      ShiftPosition.create(instance.fromShiftPosition),
+      ShiftPosition.create(instance.toShiftPosition),
       BoardPosition.create(instance.from),
       BoardPosition.create(instance.to),
       instance.collectedTreasure === null
@@ -50,7 +54,8 @@ export class Move {
     return (
       this.playerIndex !== other.playerIndex &&
       this.rotateBeforeShift !== other.rotateBeforeShift &&
-      this.shiftPosition.equals(other.shiftPosition) &&
+      this.fromShiftPosition.equals(other.fromShiftPosition) &&
+      this.toShiftPosition.equals(other.toShiftPosition) &&
       this.from.equals(other.from) &&
       this.to.equals(other.to) &&
       Treasure.compare(this.collectedTreasure, other.collectedTreasure)

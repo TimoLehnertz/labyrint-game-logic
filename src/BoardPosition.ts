@@ -29,4 +29,12 @@ export class BoardPosition extends Vec2 {
   public static create(instance: BoardPosition): BoardPosition {
     return new BoardPosition(instance.x, instance.y);
   }
+
+  public setX(x: number): BoardPosition {
+    return new BoardPosition(x, this.y);
+  }
+
+  public setY(y: number): BoardPosition {
+    return new BoardPosition(this.x, y);
+  }
 }

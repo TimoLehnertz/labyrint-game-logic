@@ -8,6 +8,7 @@ import { ShiftPosition } from "./ShiftPosition";
 import { Move } from "./Move";
 import { PlayerState } from "./PlayerState";
 import { Treasure } from "./Treasure";
+import { Cyrb64 } from "./Cyrb64";
 
 /**
  * GameState class representing the state of a game
@@ -17,6 +18,7 @@ export class GameState {
   public readonly board: Board;
   public readonly allPlayerStates: AllPlayerStates;
   public readonly historyMoves: Move[];
+  private hashCache: Cyrb64 | null = null;
 
   public constructor(
     board: Board,
@@ -32,10 +34,18 @@ export class GameState {
    * @throws Error in case the move is not valid
    */
   public validateMove(move: Move) {
-    if (!this.board.isShiftPositionValid(move.shiftPosition)) {
+    if (
+      !this.board.isShiftPositionValid(move.fromShiftPosition) ||
+      !this.board.isShiftPositionValid(move.toShiftPosition)
+    ) {
       throw new Error("Invalid shift position");
     }
-    const gameStatedAfterSlide = this.insertTile(move.shiftPosition);
+    if (!this.board.shiftPosition.equals(move.fromShiftPosition)) {
+      throw new Error("Invalid starting shiftPosition");
+    }
+    const gameStatedAfterSlide = this.setShiftPosition(
+      move.toShiftPosition
+    ).insertLooseTile();
     const playerState = gameStatedAfterSlide.allPlayerStates.getPlayerState(
       move.playerIndex
     );
@@ -69,7 +79,8 @@ export class GameState {
   public move(move: Move): GameState {
     this.validateMove(move);
     return this.rotateLooseTile(move.rotateBeforeShift)
-      .insertTile(move.shiftPosition)
+      .setShiftPosition(move.toShiftPosition)
+      .insertLooseTile()
       .movePlayer(move.playerIndex, move.to)
       .collectTreasure(move.playerIndex, move.collectedTreasure)
       .nextPlayer()
@@ -86,13 +97,14 @@ export class GameState {
         .prevPlayer()
         .removeLastTreasure(move.playerIndex, move.collectedTreasure)
         .movePlayer(move.playerIndex, move.from)
-        .insertTile(this.board.invertShiftPosition(move.shiftPosition))
+        .insertLooseTile()
+        .setShiftPosition(move.fromShiftPosition)
         .rotateLooseTile(-move.rotateBeforeShift),
       undoneMove: move,
     };
   }
 
-  private rotateLooseTile(rotateBeforeShift: number): GameState {
+  public rotateLooseTile(rotateBeforeShift: number): GameState {
     return new GameState(
       this.board.rotateLooseTile(rotateBeforeShift),
       this.allPlayerStates,
@@ -100,24 +112,24 @@ export class GameState {
     );
   }
 
-  public insertTile(shiftPosition: ShiftPosition): GameState {
-    const firstMovedTilePosition =
-      this.board.getFirstMovedTilePosition(shiftPosition);
-    const lastMovedTilePosition =
-      this.board.getLastMovedTilePosition(shiftPosition);
+  public setShiftPosition(shiftPosition: ShiftPosition): GameState {
+    const newBoard = this.board.setShiftPosition(shiftPosition);
+    return new GameState(newBoard, this.allPlayerStates, this.historyMoves);
+  }
 
+  public insertLooseTile(): GameState {
     const newAllPlayerStates = this.allPlayerStates.mutateAll(
       (playerState: PlayerState): PlayerState => {
-        if (playerState.position.equals(lastMovedTilePosition)) {
-          return playerState.setPosition(firstMovedTilePosition);
-        } else {
-          return playerState;
-        }
+        return playerState.setPosition(
+          this.board.shiftPosition.shiftPlayer(
+            playerState.position,
+            this.board.width,
+            this.board.height
+          )
+        );
       }
     );
-
-    const newBoard = this.board.shift(shiftPosition);
-
+    const newBoard = this.board.insertLooseTile();
     return new GameState(newBoard, newAllPlayerStates, this.historyMoves);
   }
 
@@ -204,10 +216,11 @@ export class GameState {
   }
 
   public equals(other: GameState): boolean {
-    return (
-      this.allPlayerStates.equals(other.allPlayerStates) &&
-      this.board.equals(other.board)
-    );
+    // if (!other.hash().equals(this.hash())) {
+    //   console.log(this.board.looseTile);
+    //   console.log(other.board.looseTile);
+    // }
+    return other.hash().equals(this.hash());
   }
 
   public static create(instance: GameState): GameState {
@@ -220,5 +233,12 @@ export class GameState {
       AllPlayerStates.create(instance.allPlayerStates),
       historyMoves
     );
+  }
+
+  public hash(): Cyrb64 {
+    if (this.hashCache === null) {
+      this.hashCache = Cyrb64.hashString(JSON.stringify(this), 0);
+    }
+    return this.hashCache;
   }
 }

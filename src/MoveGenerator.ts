@@ -10,6 +10,16 @@ import { Treasure } from "./Treasure";
 
 const BEST_MOVE_WEIGHT = 10000;
 
+/**
+ * Returns a number between 0 and BEST_MOVE_WEIGHT (inclusive) based on the standing
+ */
+export type EvaluatorFunction = (
+  gameState: GameState,
+  playerIndex: number
+) => number;
+
+export type MoveGenerator = (gameState: GameState) => Move;
+
 export function generateShiftPositions(gameState: GameState): ShiftPosition[] {
   return gameState.board.generateValidShiftPositions();
 }
@@ -28,11 +38,13 @@ export function generateRandomMove(gameState: GameState): Move {
 
 export function generateMoves(
   gameState: GameState,
-  shiftPosition: ShiftPosition,
+  toShiftPosition: ShiftPosition,
   rotation: number
 ): Move[] {
   const moves: Move[] = [];
-  const movedGameState = gameState.insertTile(shiftPosition);
+  const movedGameState = gameState
+    .setShiftPosition(toShiftPosition)
+    .insertLooseTile();
   const playerState = movedGameState.allPlayerStates.getPlayerToMoveState();
   const reachableFields = movedGameState.board.getReachablePositions(
     playerState.position
@@ -47,7 +59,8 @@ export function generateMoves(
       new Move(
         movedGameState.allPlayerStates.playerIndexToMove,
         rotation,
-        shiftPosition,
+        gameState.board.shiftPosition,
+        toShiftPosition,
         playerState.position,
         reachableField,
         collectedTreasure
@@ -72,20 +85,8 @@ export function positionByTreasure(
   return null;
 }
 
-export function buildBestMoveGenerator() {
-  const lastMoves: Move[] = [];
-
-  const moveExists = (move: Move): boolean => {
-    for (let i = 0; i < lastMoves.length; i++) {
-      const lastMove = lastMoves[i];
-      if (lastMove.equals(move)) {
-        return true;
-      }
-    }
-    return false;
-  };
-
-  const findBestMove = (gameState: GameState): Move => {
+export function buildMoveGenerator(evaluate: EvaluatorFunction): MoveGenerator {
+  return (gameState: GameState): Move => {
     let bestMove: Move | null = null;
     let bestStanding = Number.MIN_SAFE_INTEGER;
     for (let rotation = 0; rotation < 4; rotation++) {
@@ -93,18 +94,27 @@ export function buildBestMoveGenerator() {
       for (const shiftPosition of shiftPositions) {
         const moves = generateMoves(gameState, shiftPosition, rotation);
         for (const move of moves) {
-          if (moveExists(move)) {
-            // console.log("exists");
-            // continue;
-          }
           if (move.collectedTreasure !== null) {
             return move;
           }
-          const potentialState = gameState.move(move);
-          const standing = evaluate(
-            potentialState,
-            gameState.allPlayerStates.playerIndexToMove
-          );
+          let moveFound = false;
+          let standing = 0;
+          for (const historyMove of gameState.historyMoves) {
+            if (historyMove.equals(move)) {
+              moveFound = true;
+              break;
+            }
+          }
+          if (moveFound) {
+            // never prefer a repeated moved move to avoid infinite games between bots
+            standing = 0;
+          } else {
+            const potentialState = gameState.move(move);
+            standing = evaluate(
+              potentialState,
+              gameState.allPlayerStates.playerIndexToMove
+            );
+          }
           if (standing === BEST_MOVE_WEIGHT) {
             return move;
           }
@@ -120,18 +130,9 @@ export function buildBestMoveGenerator() {
     }
     return bestMove;
   };
-  const wrapper = (gameState: GameState): Move => {
-    const move = findBestMove(gameState);
-    lastMoves.push(move);
-    if (lastMoves.length > 100) {
-      lastMoves.shift();
-    }
-    return move;
-  };
-  return wrapper;
 }
 
-export function evaluate(gameState: GameState, playerIndex: number) {
+export function manhattanEvaluator(gameState: GameState, playerIndex: number) {
   if (gameState.getWinnerIndex() === playerIndex) {
     return BEST_MOVE_WEIGHT;
   }

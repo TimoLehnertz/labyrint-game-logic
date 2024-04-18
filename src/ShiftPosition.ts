@@ -1,6 +1,7 @@
 /**
  * @author Timo Lehnertz
  */
+import { BoardPosition } from "./BoardPosition";
 import { Heading, HeadingHelper } from "./Heading";
 import { Vec2 } from "./Vec2";
 
@@ -25,6 +26,44 @@ export class ShiftPosition {
   }
 
   public equals(other: ShiftPosition): boolean {
-    return this.heading === other.heading && this.heading === other.heading;
+    return this.heading === other.heading && this.index === other.index;
+  }
+
+  private static checkOverflow(position: number, size: number): number {
+    if (position < 0) {
+      return size - 1;
+    }
+    if (position >= size) {
+      return 0;
+    }
+    return position;
+  }
+
+  public shiftPlayer(
+    playerPosition: BoardPosition,
+    width: number,
+    height: number
+  ): BoardPosition {
+    const isXAxis =
+      this.heading === Heading.EAST || this.heading === Heading.WEST;
+    const playerAxis = isXAxis ? playerPosition.y : playerPosition.x;
+    const shiftAxis = this.index * 2 + 1;
+    if (playerAxis === shiftAxis) {
+      const increment =
+        this.heading === Heading.NORTH || this.heading === Heading.WEST
+          ? 1
+          : -1;
+      if (isXAxis) {
+        return playerPosition.setX(
+          ShiftPosition.checkOverflow(playerPosition.x + increment, width)
+        );
+      } else {
+        return playerPosition.setY(
+          ShiftPosition.checkOverflow(playerPosition.y + increment, height)
+        );
+      }
+    } else {
+      return playerPosition;
+    }
   }
 }

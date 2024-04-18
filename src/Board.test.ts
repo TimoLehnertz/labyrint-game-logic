@@ -9,7 +9,11 @@ import { printBoard, printDistances } from "./Utils";
 test("invalid array shape", () => {
   const tiles = [[], [new PathTile(TileType.L, null, 0, null)]];
   try {
-    const board = new Board(tiles, new PathTile(TileType.L, null, 0, null));
+    const board = new Board(
+      tiles,
+      new PathTile(TileType.L, null, 0, null),
+      new ShiftPosition(Heading.NORTH, 0)
+    );
     fail("expected exception");
   } catch (e) {
     expect(e.message).toBe("Tiles of have invalid shape");
@@ -19,7 +23,11 @@ test("invalid array shape", () => {
 test("invalid shape", () => {
   const tiles = [[], []];
   try {
-    const board = new Board(tiles, new PathTile(TileType.L, null, 0, null));
+    const board = new Board(
+      tiles,
+      new PathTile(TileType.L, null, 0, null),
+      new ShiftPosition(Heading.NORTH, 0)
+    );
     fail("expected exception");
   } catch (e) {
     expect(e.message).toBe(
@@ -212,7 +220,9 @@ test("shift", () => {
     columnBefore[y] = board.getTile(new BoardPosition(1, y));
   }
   const looseTileBefore = board.looseTile;
-  board = board.shift(new ShiftPosition(Heading.NORTH, 0));
+  board = board
+    .setShiftPosition(new ShiftPosition(Heading.NORTH, 0))
+    .insertLooseTile();
   expect(looseTileBefore.equals(board.getTile(new BoardPosition(1, 0)))).toBe(
     true
   );

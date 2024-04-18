@@ -42,4 +42,12 @@ export class Vec2 {
   public get length(): number {
     return Math.sqrt(this.x * this.x + this.y * this.y);
   }
+
+  public setX(x: number): Vec2 {
+    return new Vec2(x, this.y);
+  }
+
+  public setY(y: number): Vec2 {
+    return new Vec2(this.x, y);
+  }
 }

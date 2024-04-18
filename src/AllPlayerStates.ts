@@ -20,6 +20,18 @@ export class AllPlayerStates {
     this.playerIndexToMove = playerIndexToMove;
   }
 
+  public get playerCount(): number {
+    return this.allPlayerStates.length;
+  }
+
+  public getPlayerPositions(): BoardPosition[] {
+    const positions: BoardPosition[] = [];
+    for (const playerState of this.allPlayerStates) {
+      positions.push(playerState.position);
+    }
+    return positions;
+  }
+
   private copyPlayerStates(): PlayerState[] {
     const newAllPlayerStates: PlayerState[] = [];
     for (const playerState of this.allPlayerStates) {

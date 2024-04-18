@@ -4,10 +4,12 @@
 import { AllPlayerStates } from "./AllPlayerStates";
 import { Board } from "./Board";
 import { GameState } from "./GameState";
+import { Heading } from "./Heading";
 import { Move } from "./Move";
 import { PathTile, TileType } from "./PathTile";
 import { PlayerState } from "./PlayerState";
 import { RandomNumberGenerator } from "./RandomNumberGenerator";
+import { ShiftPosition } from "./ShiftPosition";
 import { Treasure } from "./Treasure";
 
 export interface CardRatios {
@@ -319,7 +321,8 @@ export class Game {
       tiles[homePoint.x][homePoint.y] =
         tiles[homePoint.x][homePoint.y]?.setHomeOfPlayerIndex(i) ?? null;
     }
-    return new Board(tiles as PathTile[][], looseTile);
+    const startingShiftPosition = new ShiftPosition(Heading.NORTH, 0);
+    return new Board(tiles as PathTile[][], looseTile, startingShiftPosition);
   }
 
   private static generateRandomTileType(

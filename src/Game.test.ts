@@ -8,6 +8,7 @@ import {
 import { TileType } from "./PathTile";
 import { RandomNumberGenerator } from "./RandomNumberGenerator";
 import { Treasure } from "./Treasure";
+import { printBoard } from "./Utils";
 
 test("seeding", () => {
   const game1 = Game.buildFromSetup({
@@ -254,4 +255,11 @@ test("build from invalid string", () => {
   } catch (e) {
     expect(e.message).toBe("Invalid game string");
   }
+});
+
+test("destination is not in reach", () => {
+  let game = Game.buildFromSetup({
+    seed: "A swan picnicking with a aardvark",
+  });
+  printBoard(game.gameState.board);
 });

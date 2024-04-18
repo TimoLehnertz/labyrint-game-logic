@@ -14,6 +14,7 @@ import { Treasure } from "./Treasure";
 export class Board {
   private tiles: PathTile[][];
   public readonly looseTile: PathTile;
+  public readonly shiftPosition: ShiftPosition;
   public readonly width: number;
   public readonly height: number;
 
@@ -21,9 +22,14 @@ export class Board {
    * @param tiles Must a quadratic array
    * @param looseTile the tile that is currently free
    */
-  public constructor(tiles: PathTile[][], looseTile: PathTile) {
+  public constructor(
+    tiles: PathTile[][],
+    looseTile: PathTile,
+    shiftPosition: ShiftPosition
+  ) {
     this.tiles = tiles;
     this.looseTile = looseTile;
+    this.shiftPosition = shiftPosition;
     this.width = tiles.length;
     this.height = tiles[0].length;
     for (const row of tiles) {
@@ -38,17 +44,21 @@ export class Board {
     }
   }
 
-  public shift(shiftPosition: ShiftPosition) {
-    let currentPosition = this.getFirstMovedTilePosition(shiftPosition);
+  public insertLooseTile() {
+    let currentPosition = this.getFirstMovedTilePosition(this.shiftPosition);
     const newTiles = this.copyTiles();
     let lastTile = this.looseTile;
     while (currentPosition.isInBounds(this.width, this.height)) {
       const tmp = newTiles[currentPosition.x][currentPosition.y];
       newTiles[currentPosition.x][currentPosition.y] = lastTile;
       lastTile = tmp;
-      currentPosition = currentPosition.add(shiftPosition.shiftVector);
+      currentPosition = currentPosition.add(this.shiftPosition.shiftVector);
     }
-    return new Board(newTiles, lastTile);
+    return new Board(
+      newTiles,
+      lastTile,
+      this.invertShiftPosition(this.shiftPosition)
+    );
   }
 
   public generateDistances(from: BoardPosition): number[][] {
@@ -182,7 +192,11 @@ export class Board {
   }
 
   public rotateLooseTile(rotateBeforeShift: number): Board {
-    return new Board(this.tiles, this.looseTile.rotate(rotateBeforeShift));
+    return new Board(
+      this.tiles,
+      this.looseTile.rotate(rotateBeforeShift),
+      this.shiftPosition
+    );
   }
 
   public static getValidSizes(maxSize: number): number[] {
@@ -315,6 +329,10 @@ export class Board {
     }
   }
 
+  public setShiftPosition(shiftPosition: ShiftPosition): Board {
+    return new Board(this.tiles, this.looseTile, shiftPosition);
+  }
+
   /**
    * Because Tile is immutable we dont need to make a deep copy here
    */
@@ -340,6 +358,10 @@ export class Board {
 
   public equals(other: Board): boolean {
     if (!this.looseTile.equals(other.looseTile)) {
+      console.log("looseTile");
+      return false;
+    }
+    if (!this.shiftPosition.equals(other.shiftPosition)) {
       return false;
     }
     if (this.width !== other.width || this.height !== other.height) {
@@ -364,6 +386,10 @@ export class Board {
       }
       tiles.push(newRow);
     }
-    return new Board(tiles, PathTile.create(instance.looseTile));
+    return new Board(
+      tiles,
+      PathTile.create(instance.looseTile),
+      ShiftPosition.create(instance.shiftPosition)
+    );
   }
 }
