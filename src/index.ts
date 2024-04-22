@@ -13,7 +13,16 @@ export {
 export { GameState } from "./GameState";
 export { Heading, HeadingHelper } from "./Heading";
 export { Move } from "./Move";
-export { generateMoves, generateShiftPositions } from "./MoveGenerator";
+export {
+  generateMoves,
+  generateShiftPositions,
+  EvaluatorFunction,
+  MoveGenerator,
+  buildMoveGenerator,
+  generateRandomMove,
+  manhattanEvaluator,
+  positionByTreasure,
+} from "./MoveGenerator";
 export { OpenSides } from "./OpenSides";
 export { Path } from "./Path";
 export { PathTile, TileType } from "./PathTile";
