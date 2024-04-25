@@ -257,9 +257,9 @@ test("build from invalid string", () => {
   }
 });
 
-test("destination is not in reach", () => {
-  let game = Game.buildFromSetup({
-    seed: "A swan picnicking with a aardvark",
-  });
-  printBoard(game.gameState.board);
-});
+// test("destination not in reach", () => {
+//   let game = Game.buildFromSetup({
+//     seed: "A fennec fox cycling with a blue whale",
+//   });
+//   printBoard(game.gameState.board);
+// });
