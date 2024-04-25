@@ -43,9 +43,9 @@ export class GameState {
     if (!this.board.shiftPosition.equals(move.fromShiftPosition)) {
       throw new Error("Invalid starting shiftPosition");
     }
-    const gameStatedAfterSlide = this.setShiftPosition(
-      move.toShiftPosition
-    ).insertLooseTile();
+    const gameStatedAfterSlide = this.setShiftPosition(move.toShiftPosition)
+      .rotateLooseTile(move.rotateBeforeShift)
+      .insertLooseTile();
     const playerState = gameStatedAfterSlide.allPlayerStates.getPlayerState(
       move.playerIndex
     );

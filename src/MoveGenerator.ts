@@ -44,6 +44,7 @@ export function generateMoves(
   const moves: Move[] = [];
   const movedGameState = gameState
     .setShiftPosition(toShiftPosition)
+    .rotateLooseTile(rotation)
     .insertLooseTile();
   const playerState = movedGameState.allPlayerStates.getPlayerToMoveState();
   const reachableFields = movedGameState.board.getReachablePositions(
@@ -85,7 +86,31 @@ export function positionByTreasure(
   return null;
 }
 
-export function buildMoveGenerator(evaluate: EvaluatorFunction): MoveGenerator {
+function shuffle(array: any[]) {
+  let currentIndex = array.length;
+  // While there remain elements to shuffle...
+  while (currentIndex != 0) {
+    // Pick a remaining element...
+    let randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex--;
+    // And swap it with the current element.
+    [array[currentIndex], array[randomIndex]] = [
+      array[randomIndex],
+      array[currentIndex],
+    ];
+  }
+}
+
+/**
+ *
+ * @param evaluate Eval function
+ * @param strength number between 0 and 1 0 => random move, 1 => strongest move
+ * @returns The move generator
+ */
+export function buildMoveGenerator(
+  evaluate: EvaluatorFunction,
+  strength: number
+): MoveGenerator {
   return (gameState: GameState): Move => {
     let bestMove: Move | null = null;
     let bestStanding = Number.MIN_SAFE_INTEGER;
@@ -93,7 +118,18 @@ export function buildMoveGenerator(evaluate: EvaluatorFunction): MoveGenerator {
       const shiftPositions = generateShiftPositions(gameState);
       for (const shiftPosition of shiftPositions) {
         const moves = generateMoves(gameState, shiftPosition, rotation);
+        if (strength < 1) {
+          shuffle(moves);
+        }
+        const lookupAmount = Math.max(
+          moves.length - 1,
+          Math.min(1, Math.floor(moves.length * strength))
+        );
+        let i = 0;
         for (const move of moves) {
+          if (i >= lookupAmount) {
+            break;
+          }
           if (move.collectedTreasure !== null) {
             return move;
           }
@@ -122,6 +158,7 @@ export function buildMoveGenerator(evaluate: EvaluatorFunction): MoveGenerator {
             bestStanding = standing;
             bestMove = move;
           }
+          i++;
         }
       }
     }

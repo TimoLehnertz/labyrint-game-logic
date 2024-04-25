@@ -102,7 +102,7 @@ test("complete 7*7 best move", () => {
       // seed: "0.19895043778587929",
       seed: seed,
     });
-    const moveGenerator = buildMoveGenerator(manhattanEvaluator);
+    const moveGenerator = buildMoveGenerator(manhattanEvaluator, 1);
     // console.log("seed:", seed);
     while (true) {
       const winner = game.gameState.getWinnerIndex();
