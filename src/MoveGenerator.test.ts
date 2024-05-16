@@ -6,6 +6,7 @@ import {
   generateShiftPositions,
   manhattanEvaluator,
 } from "./MoveGenerator";
+import { printBoard } from "./Utils";
 
 test("all starting moves", () => {
   // let count = 0;
@@ -91,33 +92,33 @@ test("all starting moves", () => {
 //   // console.log("avg", avg);
 // });
 
-test("complete 7*7 best move", () => {
-  let avg = 0;
-  const runs = 10;
-  for (let i = 0; i < runs; i++) {
-    const seed = Math.random() + "";
-    const game = Game.buildFromSetup({
-      boardWidth: 7,
-      boardHeight: 7,
-      // seed: "0.19895043778587929",
-      seed: seed,
-    });
-    const moveGenerator = buildMoveGenerator(manhattanEvaluator, 1);
-    // console.log("seed:", seed);
-    while (true) {
-      const winner = game.gameState.getWinnerIndex();
-      if (winner !== null) {
-        break;
-      }
-      const move = moveGenerator(game.gameState);
-      game.move(move);
-      console.log(
-        "moved",
-        game.gameState.allPlayerStates.getPlayerState(0).remainingTreasureCount
-      );
-    }
-    avg += game.gameState.historyMoves.length / runs;
-    console.log(`game ${i} finished in ${game.gameState.historyMoves.length}`);
-  }
-  // console.log("avg", avg);
-});
+// test("complete 7*7 best move", () => {
+//   let avg = 0;
+//   const runs = 10;
+//   for (let i = 0; i < runs; i++) {
+//     const seed = Math.random() + "";
+//     const game = Game.buildFromSetup({
+//       boardWidth: 7,
+//       boardHeight: 7,
+//       // seed: "0.19895043778587929",
+//       seed: seed,
+//     });
+//     const moveGenerator = buildMoveGenerator(manhattanEvaluator, 1);
+//     // console.log("seed:", seed);
+//     while (true) {
+//       const winner = game.gameState.getWinnerIndex();
+//       if (winner !== null) {
+//         break;
+//       }
+//       const move = moveGenerator(game.gameState);
+//       game.move(move);
+//       console.log(
+//         "moved",
+//         game.gameState.allPlayerStates.getPlayerState(0).remainingTreasureCount
+//       );
+//     }
+//     avg += game.gameState.historyMoves.length / runs;
+//     console.log(`game ${i} finished in ${game.gameState.historyMoves.length}`);
+//   }
+//   // console.log("avg", avg);
+// });

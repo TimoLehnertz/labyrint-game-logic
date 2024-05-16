@@ -194,6 +194,12 @@ export function manhattanEvaluator(gameState: GameState, playerIndex: number) {
     return 0; // treasure is on loose tile
   }
   // const distance = playerState.position.distanceFrom(treasureLocation);
-  const distance = playerState.position.manhattanDistanceFrom(treasureLocation);
-  return BEST_MOVE_WEIGHT - distance;
+  const diff = playerState.position.subtract(treasureLocation);
+  if (Math.abs(diff.x) === 1 && Math.abs(diff.y) === 1) {
+    return BEST_MOVE_WEIGHT - 1;
+  } else {
+    const distance =
+      playerState.position.manhattanDistanceFrom(treasureLocation);
+    return BEST_MOVE_WEIGHT - distance;
+  }
 }
